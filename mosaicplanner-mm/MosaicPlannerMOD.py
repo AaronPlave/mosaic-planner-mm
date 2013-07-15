@@ -32,7 +32,7 @@ from Transform import Transform,ChangeTransform
 from xml.dom.minidom import parseString
 import wx
 import MetadataHandler
-##import MM_AT
+import MM_AT_MOD as MM_AT
 import time
 import json
 from PIL import Image
@@ -543,7 +543,7 @@ class MosaicPanel(FigureCanvas):
         (corrval,dxy_um)=self.mosaicImage.align_by_correlation((self.posList.pos1.x,self.posList.pos1.y),(self.posList.pos2.x,self.posList.pos2.y),window,delta,1)
         (dx_um,dy_um)=dxy_um
         
-        self.posList.pos2.shiftPosition(-dx_um,dy_um) #watch out for this shit.. gets weird
+        self.posList.pos2.shiftPosition(-dx_um,dy_um) #watch out for this shi(f)t.. gets weird
         #self.draw()
         return corrval
           
@@ -603,7 +603,7 @@ class MosaicPanel(FigureCanvas):
         """
 ##        print np.array(imagedata,np.dtype('uint16')).shape,(height,width)
         imagematrix=np.reshape(np.array(imagedata,np.dtype('uint16')),(height,width))
-        print extent
+##        print extent
         self.mosaicImage=MosaicImage(self.subplot,self.posone_plot,self.postwo_plot,self.corrplot,tif_filename,imagematrix,extent,flipVert=flipVert)
        
         #self.get_toolbar().sliderMinCtrl.SetValue(int(self.mosaicImage.imagematrix.min(axis=None)))
@@ -627,17 +627,17 @@ class MosaicPanel(FigureCanvas):
         (image,small_height,small_width)=self.Parent.LoadImage(filename)
 
         #set extent
-        extent = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage('C:\Users\Aaron Plave\Desktop\mosaic.tif')[0],filename,
-                                                   image,old_extent)
+        old_mosaic = self.Parent.LoadImage('C:\Users\Aaron\Desktop\mosaic.tif')
+        new_extent = self.mosaicImage.extendMosaicTiff(old_mosaic[0],filename,image,old_extent)
 
-        (image,small_height,small_width)=self.Parent.LoadImage('C:\Users\Aaron Plave\Desktop\mosaic.tif')
-        image = self.sixteen2eight(image)
+        (new_mosaic,small_height,small_width)=self.Parent.LoadImage('C:\Users\Aaron\Desktop\mosaic.tif')
+        new_mosaic = self.sixteen2eight(new_mosaic)
         
         #update canvas
-        self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
+        self.mosaicImage.updateImageCenter(np.reshape(np.array(new_mosaic.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
         self.Parent.mosaicCanvas.draw()
-        self.Parent.mosaicCanvas.setImageExtent(extent)
-        return extent
+        self.Parent.mosaicCanvas.setImageExtent(new_extent)
+        return new_extent
 
     def ButtonLoad(self,evt="None"):
         #open the first image
@@ -670,17 +670,16 @@ class MosaicPanel(FigureCanvas):
         extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(self.image_filepicker1)[0],self.image_filepicker2,self.Parent.LoadImage(self.image_filepicker2)[0],extent)
 
         #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
-        (image,small_height,small_width)=self.Parent.LoadImage('C:\Users\Aaron Plave\Desktop\mosaic.tif')
+        (image,small_height,small_width)=self.Parent.LoadImage('C:\Users\Aaron\Desktop\mosaic.tif')
         image = self.sixteen2eight(image)
         
         self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
         self.Parent.mosaicCanvas.draw()
         self.Parent.mosaicCanvas.setImageExtent(extent2)
-        return
         #Rest of images
 
-        files = ['C:\Users\Aaron Plave\Desktop\mosaic-planner-with-micromanager\mosaic-planner-with-micromanager\mosaicplanner-mm\Testfiles\TEST2\Pos4\img_000000000_Default_000.tif',
-                 'C:\Users\Aaron Plave\Desktop\mosaic-planner-with-micromanager\mosaic-planner-with-micromanager\mosaicplanner-mm\Testfiles\TEST2\Pos5\img_000000000_Default_000.tif']
+        files = ['C:\Users\Aaron\Desktop\mosaic-planner-mm\mosaicplanner-mm\Testfiles\images\\1-Pos_001_000\img_000000000_DAPI_000.tif',
+                 'C:\Users\Aaron\Desktop\mosaic-planner-mm\mosaicplanner-mm\Testfiles\images\\1-Pos_001_001\img_000000000_DAPI_000.tif']
 
   ##        self.newImage(extent2,files[0])
 
@@ -690,20 +689,23 @@ class MosaicPanel(FigureCanvas):
             
     def NextImage(self,evt="None"):
         #check for/make dir for next images
-        if not os.path.exists('C:\Program Files\Micro-Manager-1.4/new_tiles/'):
+        if not os.path.exists('C:\\Program Files\Micro-Manager-1.4_32\\new_tiles'):
             os.mkdir('new_tiles') #HAVE TO ADD THIS DIR TO findHighResImageFIle CHECKING
         #guess next tile from previous coordinates
         for i in self.posList.slicePositions: print i.x,i.y
         x1,y1 = self.posList.slicePositions[0].x,self.posList.slicePositions[0].y
         x2,y2 = self.posList.slicePositions[1].x,self.posList.slicePositions[1].y
         x3,y3 = x2+(x2-x1),y2+(y2-y1)
-        print x3,y3
+        print x3,y3,"x3,y3"
 
         #check if x3,y3 is a point already in the mosaic using findhighrestile
         check = self.mosaicImage.findHighResImageFile(x3,y3)
         if check:
+            print check
+            print "point already in mosaic"
             pass #cross corr
-        else:            
+        else:
+            print "point outside of current mosaic, acquiring new tile"
             #acquire next tile
             MM_AT.setExposure(100)
             MM_AT.setXY(x3,y3)
@@ -716,9 +718,9 @@ class MosaicPanel(FigureCanvas):
             array8= np.reshape(b,(img16[2],img16[1]))
             img8 = Image.fromarray(array8)
             img8.show()
-            newdir = 'C:\Program Files\Micro-Manager-1.4/new_tiles/'+str(x3)+str(y3)
+            newdir = 'C:\\Program Files\\Micro-Manager-1.4_32\\new_tiles\\'+str(x3)+str(y3)
             os.mkdir(newdir)
-            f_out = newdir+'/'+'img_000000000_DAPI_000.tif'
+            f_out = newdir+'\\'+'img_000000000_DAPI_000.tif'
             img8.save(f_out)
             #write new image metadata to file
             width,height,Pxsize,Xpos,Ypos = img16[1],img16[2],\
@@ -728,11 +730,15 @@ class MosaicPanel(FigureCanvas):
                             "PixelSize_um":Pxsize},
                  "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos}}   
             meta = json.dumps(d)
-            os.write(newdir+'/'+'metadata.txt',meta)
+            new_meta = open(newdir+'\\'+'metadata.txt','w')
+            new_meta.write(meta)
+            new_meta.close()
             #add new image to mosaic
             print self.mosaicImage.extent
-            self.newImage(self.mosaicImage.extent,newdir+'/'+'metadata.txt')
+            print newdir+'\\'+'metadata.txt'
+            self.newImage(self.mosaicImage.extent,newdir+'\\'+'img_000000000_DAPI_000.tif')
             #cross correllate new tile with last position
+            print "TIME TO CORR!"
 
     def cross_corr(self,stuff):
         pass

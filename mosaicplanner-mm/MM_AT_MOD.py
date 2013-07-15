@@ -7,6 +7,8 @@ print info,"\n"
 
 def loadsysconf(conf="AT_without_CAM.cfg"):
      mmc.loadSystemConfiguration(conf)
+     mmc.loadDevice("cam","DemoCamera","DCam")
+     mmc.initializeDevice("cam")
 
 loadsysconf()
 def setExposure(exposure_ms):
@@ -26,7 +28,7 @@ def get_property(prop,element='Zeiss Axiocam'): #prop like binning
         return mmc.getProperty(element,prop)
     except:
         print "Unable to get %s from  %s" %(prop,element)
-
+        return .6  
 def set_property(prop,value,element='Zeiss Axiocam'):
     #set some properties
     mmc.setProperty(element, prop,value)
@@ -50,7 +52,7 @@ def print_suppported_properties(element="Core"):
 def setZ(z):
     mmc.setPosition("ZeissFocusAxis",z)
 
-def setXY(x,y):
+def setXY(x,y): #NOT SURE HOW ACCURATE SET AND GET ARE, MIGHT WANT TO MOVE PLACES TWICE
     mmc.setXYPosition("ZeissXYStage",x,y) #set position
 
 def getXYZ():
