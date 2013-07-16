@@ -686,42 +686,94 @@ class MosaicPanel(FigureCanvas):
         old_extent = extent2
         for f in files:
             old_extent = self.newImage(old_extent,f)
+
             
     def NextImage(self,evt="None"):
+        #calls the real function
+        go = True
+        counter = 0
+        while go:
+            if counter == 5:
+                print "reached counter limit"
+                break
+            go = self.AcquireNext()
+            counter += 1
+            
+        print "finished"
+        
+    def AcquireNext(self):
+        #also might want to move this to MosaicImage
+        #stop condition??
         #check for/make dir for next images
+        print "ANOTHER ROUND OF ACQUIRE NEXT"
         if not os.path.exists('C:\\Program Files\Micro-Manager-1.4_32\\new_tiles'):
-            os.mkdir('new_tiles') #HAVE TO ADD THIS DIR TO findHighResImageFIle CHECKING
+            os.mkdir('new_tiles') #HAVE TO ADD THIS DIR TO findHighResImageFIle CHECKING?
+            
         #guess next tile from previous coordinates
         for i in self.posList.slicePositions: print i.x,i.y
-        x1,y1 = self.posList.slicePositions[0].x,self.posList.slicePositions[0].y
-        x2,y2 = self.posList.slicePositions[1].x,self.posList.slicePositions[1].y
-        x3,y3 = x2+(x2-x1),y2+(y2-y1)
+        newpos=self.posList.new_position_after_step()
+        if newpos == None:
+            print "newpos false"
+            return False
+##        x1,y1 = self.posList.slicePositions[0].x,self.posList.slicePositions[0].y
+##        x2,y2 = self.posList.slicePositions[1].x,self.posList.slicePositions[1].y
+        x3,y3 = self.posList.pos2.x,self.posList.pos2.y
         print x3,y3,"x3,y3"
 
+        #image capture and corr
+        corr = self.image_capture_and_corr(x3,y3)
+
+        #if good match
+        if corr:
+            return True
+
+        #if bad match
+        else:
+            box = self.surrounding_three()
+            for point in box:
+                corr = self.image_capture_and_corr(point[0],point[1])
+                if corr > .3:
+                    return True
+                #could remove the tile here if it's not good, but eh.
+                print "no match, trying next tile in box"
+            #fail condition, what to do here?
+            print "no successful matches, game over, your castle was overrun, go home, you lose, sciencefail."
+            return False
+            
+
+    def image_capture_and_corr(self,x3,y3):
         #check if x3,y3 is a point already in the mosaic using findhighrestile
         check = self.mosaicImage.findHighResImageFile(x3,y3)
+
+        
         if check:
             print check
             print "point already in mosaic"
-            pass #cross corr
+            #down to cross corr
+            corr = self.cross_corr()
+
         else:
             print "point outside of current mosaic, acquiring new tile"
             #acquire next tile
             MM_AT.setExposure(100)
             MM_AT.setXY(x3,y3)
-            img16 = MM_AT.snapImage() #need to add autofocus support!!
-            time.sleep(2) 
-            #convert to 8 bit
+            
+            time.sleep(3) #look at demo to see how image capture is waited for
+            img16 = MM_AT.snapImage() #need to add autofocus support!! Should it autofocus after failure? maybe depending on sharpness of failed image?
+            time.sleep(2)
+            
+            #convert to 8 bit, different from the normal function since not from file
             a = img16[0]
             print a,type(a)
             b=256.0*a/a.max()
             array8= np.reshape(b,(img16[2],img16[1]))
             img8 = Image.fromarray(array8)
-            img8.show()
+##            img8.show()
             newdir = 'C:\\Program Files\\Micro-Manager-1.4_32\\new_tiles\\'+str(x3)+str(y3)
             os.mkdir(newdir)
             f_out = newdir+'\\'+'img_000000000_DAPI_000.tif'
             img8.save(f_out)
+            
             #write new image metadata to file
             width,height,Pxsize,Xpos,Ypos = img16[1],img16[2],\
                                             MM_AT.get_property("PixelSize_um"),\
@@ -733,69 +785,53 @@ class MosaicPanel(FigureCanvas):
             new_meta = open(newdir+'\\'+'metadata.txt','w')
             new_meta.write(meta)
             new_meta.close()
+            
             #add new image to mosaic
             print self.mosaicImage.extent
             print newdir+'\\'+'metadata.txt'
             self.newImage(self.mosaicImage.extent,newdir+'\\'+'img_000000000_DAPI_000.tif')
+            
             #cross correllate new tile with last position
-            print "TIME TO CORR!"
-
-    def cross_corr(self,stuff):
-        pass
+            corr = self.cross_corr()
+            
+        return corr
+    
+    def cross_corr(self):
+        """
+        Cross corr for MM
+        """
+        corrval=self.CorrTool(window=100,delta=75,skip=3)
+        corrval=self.CorrTool(window=100,delta=75,skip=3) #doing this twice for now since corr is broken
         #if good match:
-            #acquire next tile
+        if corrval > .3:
+            return True
+        else:
+            return False
         #if bad match:
             #take tiles surrounding point, i.e. increase search range
             #manual intervention?
-            #say screw it and come back to the point?  
+            #say screw it and come back to the point later?  
 
+    def surrounding_three(self):
+        """
+        Generates box of surrounding tiles using pos2. Named p1 through p8, starting top left, going to the right and down a row, snake pattern (for now).
+        """
+        x,y = self.posList.pos2.x,self.posList.pos2.y
+        width_um,height_um = self.mosaicImage.originalwidth*.6,self.mosaicImage.originalheight*.6
+
+        #points in stage coords (microns)
+        p1 = (x - width_um, y + height_um)
+        p2 = (x, y + height_um)
+        p3 = (x + width_um + height_um)
+        p4 = (x + width_um, y)
+        p5 = (x - width_um, y)
+        p6 = (x - width_um, y - height_um)
+        p7 = (x, y - height_um)
+        p8 = (x + width_um, y - height_um)
+
+        return [p1,p2,p3,p4,p5,p6,p7,p8]
         
-    def ButtonLoad2(self,evt="None"): ##############################################################################
-        #open the first image
-        default_image=""
-##        print "Button loading!"
-        openfiledialog = wx.FileDialog(self,"Open Image File","","","*.tif",wx.FD_OPEN)
-        if openfiledialog.ShowModal() == wx.ID_CANCEL:
-            return
-        self.image_filepicker = openfiledialog.GetPath()
-     
-        #calculate extent from metadata
-        extent = MetadataHandler.LoadMetadata(self.image_filepicker)
-        print extent,"e1"
-        (image,small_height,small_width)=self.Parent.LoadImage(self.image_filepicker)
-        image = self.sixteen2eight(image)
-        
-        #draw first image
-        self.Parent.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,self.image_filepicker,flipVert=self.Parent.flipvert.IsChecked())
-        self.Parent.mosaicCanvas.draw()
-        self.Parent.mosaicCanvas.setImageExtent(extent)
-
-        #IMAGE 2
-        extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage("d:\User_Data\Administrator\Desktop\mm\New Folder\TEST2\Pos1\img_000000000_Default_000.tif")[0],
-                                                                    "d:\User_Data\Administrator\Desktop\mm\New Folder\TEST2\Pos2\img_000000000_Default_000.tif",
-                                        self.Parent.LoadImage("d:\User_Data\Administrator\Desktop\mm\New Folder\TEST2\Pos2\img_000000000_Default_000.tif")[0],extent)
-        print extent2,"e2"
-        #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
-        (image,small_height,small_width)=self.Parent.LoadImage('d:\User_Data\Administrator\Desktop\mosaic.tif')
-        image = self.sixteen2eight(image)
-        
-        self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
-        self.Parent.mosaicCanvas.draw()
-        self.Parent.mosaicCanvas.setImageExtent(extent2)
-
-        #IMAGE 3  
-        extent3 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage("d:\User_Data\Administrator\Desktop\mosaic.tif")[0],
-                                                                    "d:\User_Data\Administrator\Desktop\mm\New Folder\TEST2\Pos3\img_000000000_Default_000.tif",
-                                        self.Parent.LoadImage("d:\User_Data\Administrator\Desktop\mm\New Folder\TEST2\Pos3\img_000000000_Default_000.tif")[0],extent2)
-
-        #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
-        (image,small_height,small_width)=self.Parent.LoadImage('d:\User_Data\Administrator\Desktop\mosaic.tif')
-
-        self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
-        self.Parent.mosaicCanvas.draw()
-        self.Parent.mosaicCanvas.setImageExtent(extent3)
-        print extent3,"e3"
-        
+          
 class ZVISelectFrame(wx.Frame):
     """class extending wx.Frame for highest level handling of GUI components """
     ID_RELATIVEMOTION = wx.NewId()
