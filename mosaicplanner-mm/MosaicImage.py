@@ -18,7 +18,7 @@
 #===============================================================================
  
  
-from PIL import Image
+import Image
 import ImageEnhance
 import numpy as np
 import threading
@@ -266,7 +266,7 @@ class MosaicImage():
 ##        print int(px2[0]-minx/.6),int(abs(px2[2]-maxy/.6))
 ##        print size_int
 ##        im.show()
-        im.save('C:\Users\Aaron\Desktop\mosaic.tif')
+        im.save('d:\\User_Data\\Administrator\\Desktop\\mosaic.tif')
 ##        print extent
         return im,extent
         
@@ -305,7 +305,7 @@ class MosaicImage():
             
             if x >= tile_extent[0] and x <= tile_extent[1]:
                 if y >= tile_extent[2] and y <= tile_extent[3]:   
-                    self.imagefile = img
+                    self.imagefile = img.replace('\\','\\')
                     return self.imagefile
                 
         return False #did not find HightResImageFile containing x,y coords
@@ -384,8 +384,6 @@ class MosaicImage():
         else:
             theaxis.set_ylim(yc-dh,yc+dh) #changed this to have cutouts work but it changed the cross correllation, made it negative somewhere 
         theaxis.hold(True)
-        print (xc-dw,xc+dw) ,"x vals"
-        print (yc-dh,yc+dh),"y vals"
         return image 
     
     def updateImageCenter(self,cut,theimage,theaxis,xc=0,yc=0,skip=1,scale=1):
@@ -414,8 +412,8 @@ class MosaicImage():
             theaxis.set_ylim(yc-dh,yc+dh)
         else:
             theaxis.set_ylim(yc-dh,yc+dh) #changed this to have cutouts work 
-        print (xc-dw,xc+dw) ,"x vals"
-        print (yc-dh,yc+dh),"y vals"
+##        print (xc-dw,xc+dw) ,"x vals"
+##        print (yc-dh,yc+dh),"y vals"
          
     def paintImageOne(self,cut,xy=(0,0),dxy_pix=(0,0),window=0):
         """paints an image in the self.one_axis axis, plotting a box of size 2*window+1 around that point
@@ -546,7 +544,7 @@ class MosaicImage():
         tile = self.findHighResImageFile(x,y)
 ##        print x,y,"xy CUTOUT POS"
         (xpx,ypx)=self.convert_pos_to_orig_ind(x,y,tile)
-        image=sixteen2eight(Image.open(tile))
+        image=sixteen2eight(Image.open(tile.replace('\\','\\')))
 ##        print xpx,ypx,"XPX,YPX"
         image=image.crop([xpx-window,ypx-window,xpx+window,ypx+window])
         #image=image.convert('L')

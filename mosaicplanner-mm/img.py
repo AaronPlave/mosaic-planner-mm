@@ -3,6 +3,8 @@ import numpy as np
 import Image
 import time
 
+
+
 def sixteen2eightB(img16):
     """Converts 16 bit PIL image to 8 bit PIL image"""
     a = img16[0]
@@ -15,39 +17,41 @@ def sixteen2eightB(img16):
  
 print "Current stage position: ",getXYZ()
 
-p1 = (4913.0, -873.5, -92.769)
-p2 = (3996.0, -521.0, -92.769)
+##p1 = (74.25, -34.0, -72.57900000000001)
+##p2 = (-907.75, 266.75, -72.57900000000001)
 
 
-def wait_Zstage():
+def wait_Zstage(): #could also do a while getXYZ != target, pass?
     while mmc.deviceBusy('ZeissFocusAxis'):
-##        mmc.waitForSystem()
-        time.sleep(.1)
-        print "waiting"
+        pass
 def wait_XYstage():
-##    while mmc.deviceBusy('ZeissXYStage'):
-    pass
+    while mmc.deviceBusy('ZeissXYStage'):
+        pass
 
-def get(pos,auto=False):
+def get(pos,auto=False): #hmm, have get calling auto and auto calling get. bad.
     """sets pos, snaps image at pos"""
     setXY(pos[0],pos[1])
-    time.sleep(.1)
-##    wait_XYstage()
+    curr = (getXYZ()[0],getXYZ()[1])
+    if curr != (pos[0],pos[1]):
+        wait_XYstage()
     if auto:
-        autofocus(4,10,2)
-    im = sixteen2eightB(snapImage())
-##    wait_XYstage()
+        z = autofocus(pos,4,10,2)
+        setZ(z[0][2])
+        wait_Zstage()
+        im = z[2]
+    else:
+        im = sixteen2eightB(snapImage())
     return im
 
-def guess_next_linear(p1,p2):
+def guess_next_linear(p1,p2): #should eventually modify to include a real Z guess
     dx,dy = p2[0]-p1[0],p2[1]-p1[1]
-    p3 = (p2[0]+dx,p2[1]+dy)
+    p3 = (p2[0]+dx,p2[1]+dy,p2[2]) #just using last Z for current Z
     print p3,"p3 guess"
     return p3
 
 def main(num_pos):
-    p1 = (15543.75, 3334.75, 123.011)
-    p2 = (14519.75, 3334.75, 123.011)
+    p1 = (74.25, -34.0, -72.57900000000001)
+    p2 = (-907.75, 266.75, -72.57900000000001)
     setXY(p2[0],p2[1])
 
     #All the positions
@@ -56,7 +60,7 @@ def main(num_pos):
     #and go!
     for i in range(num_pos):
         p3 = guess_next_linear(positions[-2],positions[-1])
-        get(p3)
+        get( p3,True)
         positions.append(p3)
         
     return positions
@@ -72,11 +76,10 @@ def autofocus(pos,steps,rough_step,fine_step):
     Basic autofocus, improve later, use MM if possible?
     """
     start = time.clock()
-    (4913.0, -873.5, -92.769)
+
     #set initial position
     setXY(pos[0],pos[1])
-    time.sleep(2)
-##    wait_XYstage()
+    wait_XYstage() #add check for curr pos == set pos here if it hangs
     setZ(pos[2])
     wait_Zstage()
 
@@ -137,7 +140,7 @@ def autofocus(pos,steps,rough_step,fine_step):
     for i in fines:
         setZ(i)
         wait_Zstage()
-        pos = getXYZ()
+        pos = getXYZ() 
         print pos
         im = get(pos)
         score = sharpness(im)
@@ -160,6 +163,7 @@ def autofocus(pos,steps,rough_step,fine_step):
     print "sharpest image --> ", best
 
     end = time.clock()
+    
     best[2].show()
     print "Run time = ",end-start
     
@@ -167,11 +171,12 @@ def autofocus(pos,steps,rough_step,fine_step):
         print "current pos is best"
     return best
 
+
+
 mmc.setAutoShutter(0)
 mmc.setShutterOpen(1)
 setExposure(50)
-
-x = autofocus(p1,4,10,2)
+main(4)
 mmc.setShutterOpen(0)
 
 
