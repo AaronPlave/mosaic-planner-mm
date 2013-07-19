@@ -4,7 +4,6 @@ import Image
 import time
 
 
-
 def sixteen2eightB(img16):
     """Converts 16 bit PIL image to 8 bit PIL image"""
     a = img16[0]
@@ -14,20 +13,20 @@ def sixteen2eightB(img16):
     
     return img8
 
- 
 print "Current stage position: ",getXYZ()
-
-##p1 = (74.25, -34.0, -72.57900000000001)
-##p2 = (-907.75, 266.75, -72.57900000000001)
+##
+##p1 = (5232.75, -503.25, -35.209)
+##p2 =(5232.75, -503.25, -35.209)
 
 
 def wait_Zstage(): #could also do a while getXYZ != target, pass?
-    while mmc.deviceBusy('ZeissFocusAxis'):
-        pass
+##    while mmc.deviceBusy('ZeissFocusAxis'):
+    time.sleep(.2)
 def wait_XYstage():
-    while mmc.deviceBusy('ZeissXYStage'):
-        pass
-
+##    while mmc.deviceBusy('ZeissXYStage'):
+##        pass
+    time.sleep(.2)
+    
 def get(pos,auto=False): #hmm, have get calling auto and auto calling get. bad.
     """sets pos, snaps image at pos"""
     setXY(pos[0],pos[1])
@@ -38,10 +37,10 @@ def get(pos,auto=False): #hmm, have get calling auto and auto calling get. bad.
         z = autofocus(pos,4,10,2)
         setZ(z[0][2])
         wait_Zstage()
-        im = z[2]
+        return z
     else:
         im = sixteen2eightB(snapImage())
-    return im
+        return im
 
 def guess_next_linear(p1,p2): #should eventually modify to include a real Z guess
     dx,dy = p2[0]-p1[0],p2[1]-p1[1]
@@ -50,8 +49,8 @@ def guess_next_linear(p1,p2): #should eventually modify to include a real Z gues
     return p3
 
 def main(num_pos):
-    p1 = (74.25, -34.0, -72.57900000000001)
-    p2 = (-907.75, 266.75, -72.57900000000001)
+##    p1 = (74.25, -34.0, -72.57900000000001)
+##    p2 = (-907.75, 266.75, -72.57900000000001)
     setXY(p2[0],p2[1])
 
     #All the positions
@@ -88,7 +87,7 @@ def autofocus(pos,steps,rough_step,fine_step):
     xyz = getXYZ()
     im = get(xyz)
     best = (xyz,sharpness(im),im)
-    print "score to beat --> ",best[1]
+    print "original score to beat --> ",best[1]
     
     #rough focus list######
     z = xyz[2]
@@ -102,14 +101,14 @@ def autofocus(pos,steps,rough_step,fine_step):
     print "rough focusing"
     for i in roughs:
         setZ(i)
-        print "SHOULD BE ",i
+##        print "SHOULD BE AT Z POS",i
         wait_Zstage()
         pos = getXYZ()
-        print "POS IS ",pos
+        print pos
+##        print "Z POS IS ",pos
         im = get(pos)
 ##        im.show()
         score = sharpness(im)
-        print score
         if score > best[1]:
             best = (pos,score,im)
             print "better score at pos: ", pos, " score: ",score
@@ -144,7 +143,7 @@ def autofocus(pos,steps,rough_step,fine_step):
         print pos
         im = get(pos)
         score = sharpness(im)
-        print score
+##        print score
         if score > best[1]:
             best = (pos,score,im)
             print "better score at pos: ", pos, " score: ",score
@@ -157,7 +156,6 @@ def autofocus(pos,steps,rough_step,fine_step):
                     break 
                 else:
                     streak += 1
-    print found,streak
 
     ##finished##
     print "sharpest image --> ", best
@@ -169,17 +167,19 @@ def autofocus(pos,steps,rough_step,fine_step):
     
     if found == False:
         print "current pos is best"
+    setZ(best[0][2])
     return best
 
-
-
-mmc.setAutoShutter(0)
-mmc.setShutterOpen(1)
-setExposure(50)
-main(4)
-mmc.setShutterOpen(0)
-
-
+##
+##
+##mmc.setAutoShutter(0)
+##mmc.setShutterOpen(1)
+##setExposure(50)
+##x = get(getXYZ(),True)
+####main(1)
+##mmc.setShutterOpen(0)
+##
+##
 
 
 

@@ -5,7 +5,7 @@ mmc = MMCorePy.CMMCore()
 info = mmc.getVersionInfo()
 print info,"\n"
 
-def loadsysconf(conf="AT_without_CAM.cfg"):
+def loadsysconf(conf="Micro-Manager-1.4_nightly.cfg"):
      mmc.loadSystemConfiguration(conf)
 
 loadsysconf()
@@ -58,6 +58,13 @@ def getXYZ():
     y = mmc.getYPosition('ZeissXYStage')
     z = mmc.getPosition('ZeissFocusAxis')
     return (x,y,z)
+
+def setAutoShutter(arg):
+     mmc.setAutoShutter(arg)
+
+def setShutter(arg):
+     mmc.setShutterOpen(arg)
+
 
 
 

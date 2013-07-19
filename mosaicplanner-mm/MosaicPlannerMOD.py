@@ -78,6 +78,7 @@ class MosaicToolbar(NavBarImproved):
     ON_STEP = wx.NewId()
     ON_FF = wx.NewId()
     ON_LOADIMG = wx.NewId()
+    ON_LOADIMG2 = wx.NewId()
     ON_NEXT = wx.NewId()
     ON_CORR = wx.NewId() 
     ON_FINETUNE = wx.NewId()
@@ -131,7 +132,8 @@ class MosaicToolbar(NavBarImproved):
         self.corrTool=self.AddSimpleTool(self.ON_CORR,corrBmp,'Ajdust pointLine2D 2 with correlation','corrTool') 
         self.stepTool=self.AddSimpleTool(self.ON_STEP,stepBmp,'Take one step using points 1+2','stepTool')     
         self.ffTool=self.AddSimpleTool(self.ON_FF,ffBmp,'Auto-take steps till C<.3 or off image','fastforwardTool')       
-        self.loadimages=self.AddSimpleTool(self.ON_LOADIMG,ffBmp,'Load Images')
+        self.loadimages=self.AddSimpleTool(self.ON_LOADIMG,ffBmp,'Load first image manually')
+        self.loadimages2=self.AddSimpleTool(self.ON_LOADIMG2,stepBmp,'Load second image manually')
         self.nextimage=self.AddSimpleTool(self.ON_NEXT,corrBmp,'Acquire new images automatically')
         
         #add the toggleable tools
@@ -199,8 +201,9 @@ class MosaicToolbar(NavBarImproved):
         wx.EVT_TOOL(self, self.ON_CORR, self.canvas.OnCorrTool)        
         wx.EVT_TOOL(self, self.ON_STEP, self.canvas.OnStepTool)           
         wx.EVT_TOOL(self, self.ON_FF, self.canvas.OnFastForwardTool)
-        wx.EVT_TOOL(self, self.ON_LOADIMG, self.canvas.ButtonLoad) ################################################     
-        wx.EVT_TOOL(self, self.ON_NEXT, self.canvas.NextImage) ################################################ 
+        wx.EVT_TOOL(self, self.ON_LOADIMG, self.canvas.ButtonLoad) ################################################ for loading first image
+        wx.EVT_TOOL(self, self.ON_LOADIMG2, self.canvas.ButtonLoad2) ################################################ for loading second image
+        wx.EVT_TOOL(self, self.ON_NEXT, self.canvas.NextImage) #################################################### for loading next images automatically
         wx.EVT_TOOL(self, self.ON_GRID, self.canvas.OnGridTool)
         #wx.EVT_TOOL(self, self.ON_FINETUNE, self.canvas.OnFineTuneTool)
         #wx.EVT_TOOL(self, self.ON_REDRAW, self.canvas.OnRedraw)
@@ -631,10 +634,10 @@ class MosaicPanel(FigureCanvas):
         (image,small_height,small_width)=self.Parent.LoadImage(filename)
 
         #set extent
-        old_mosaic = self.Parent.LoadImage('d:\\User_Data\\Administrator\\Desktop\\mosaic.tif')
+        old_mosaic = self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
         new_extent = self.mosaicImage.extendMosaicTiff(old_mosaic[0],filename,image,old_extent)
 
-        (new_mosaic,small_height,small_width)=self.Parent.LoadImage('d:\\User_Data\\Administrator\\Desktop\\mosaic.tif')
+        (new_mosaic,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
         new_mosaic = self.sixteen2eight(new_mosaic)
         
         #update canvas
@@ -647,37 +650,45 @@ class MosaicPanel(FigureCanvas):
         
         #grab first image from microscope
         (x,y,z) = MM_AT.getXYZ()
-        orig_pos = (x,y)
+        orig_pos = (x,y,z)
         print "POS BEFORE AUTOFOCUS",orig_pos
-        pos,score,im = Acq.get(orig_pos,True)
+        MM_AT.setAutoShutter(0)
+        MM_AT.setShutter(1)
+        (pos,score,im) = Acq.get(orig_pos,True)
+        print x,"ACQ RESULT"
         print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
         print pos,"pos from auto"
+        MM_AT.setShutter(0)
 
+        
         #check if tile folder exists
         new_tiles = os.path.join(os.getcwd(),'new_tiles')
-        if not os.path.exists(new_tiles)):
+        if not os.path.exists(new_tiles):
             os.mkdir('new_tiles')
             print "making new_tiles dir"
         
-        #create new dir for image, save im 
-        newdir = os.join(new_tiles,str(x3)+str(y3))
+        #create new dir for image, save im
+        (x,y,z) = MM_AT.getXYZ()
+        str_xyz = str((x,y,z))    
+        newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
-        f_out = os.join(newdir,'img_%s_.tif' %s str((x,y,z)))
+        f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
         im.save(f_out)
         
         #write new image metadata to file, fix pixel size, currently not grabbing right
-        width,height,Pxsize,Xpos,Ypos,Zpos = im.width,im.height,.6,pos[0],pos[1],pos[2]
+        width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
         d = {"Summary":{"Width":width,"Height":height,
                         "PixelSize_um":Pxsize},
              "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
         meta = json.dumps(d)
-        new_meta = open(os.join(newdir,'metadata.txt'),'w')
+        new_meta = open(os.path.join(newdir,'metadata.txt'),'w')
         new_meta.write(meta)
         new_meta.close()
-        
-        #add new image to mosaic
-        self.newImage(self.mosaicImage.extent,newdir+'\\'+'img_000000000_DAPI_000.tif')
 
+        #calculate extent ------COULD PROBABLY JUST USE THE IM FROM MEMORY, OR ELSE CLOSE IT
+        extent = MetadataHandler.LoadMetadata(f_out)
+        (image,small_height,small_width)=self.Parent.LoadImage(f_out)
+        
 
 ##########################################
             #Manual file option
@@ -695,39 +706,73 @@ class MosaicPanel(FigureCanvas):
         
         #draw first image
         print "Loading first image..."
-        self.Parent.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,self.image_filepicker1,flipVert=self.Parent.flipvert.IsChecked())
+        self.Parent.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,f_out,flipVert=self.Parent.flipvert.IsChecked())
         self.Parent.mosaicCanvas.draw()
         self.Parent.mosaicCanvas.setImageExtent(extent)
 
+        print "Now manually set second position via looking through scope." 
+        return
 
-        #open the second image
-        default_image=""
-        openfiledialog = wx.FileDialog(self,"Open Image File","","","*.tif",wx.FD_OPEN)
-        if openfiledialog.ShowModal() == wx.ID_CANCEL:
-            return
-        self.image_filepicker2 = openfiledialog.GetPath()
+    
+    def ButtonLoad2(self,evt="None"):
+        """After first image is manually grabbed, use this function to grab the second image"""
+        
+        #grab second image from microscope
+        (x,y,z) = MM_AT.getXYZ()
+        orig_pos = (x,y,z)
+        print "POS BEFORE AUTOFOCUS",orig_pos
+        MM_AT.setAutoShutter(0)
+        MM_AT.setShutter(1)
+        (pos,score,im) = Acq.get(orig_pos,True)
+        print x,"ACQ RESULT"
+        print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
+        print pos,"pos from auto"
+        MM_AT.setShutter(0)
 
-        #IMAGE 2
-        extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(self.image_filepicker1)[0],self.image_filepicker2,self.Parent.LoadImage(self.image_filepicker2)[0],extent)
+        #check if tile folder self.Parent.mosaicCanvas.setImageExtent(extent)exists
+        new_tiles = os.path.join(os.getcwd(),'new_tiles')
+        if not os.path.exists(new_tiles):
+            os.mkdir('new_tiles')
+            print "PROBLEM, NOT FINDING new_tiles AND OVERWRITING"
+        
+        #create new dir for image, save im
+        (x,y,z) = MM_AT.getXYZ()
+        str_xyz = str((x,y,z))    
+        newdir = os.path.join(new_tiles,str_xyz)
+        os.mkdir(newdir)
+        f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
+        im.save(f_out)
+        
+        #write new image metadata to file, fix pixel size, currently not grabbing right
+        width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
+        d = {"Summary":{"Width":width,"Height":height,
+                        "PixelSize_um":Pxsize},
+             "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
+        meta = json.dumps(d)
+        new_meta = open(os.path.join(newdir,'metadata.txt'),'w')
+        new_meta.write(meta)
+        new_meta.close()
+
+        #calculating new extent and padding
+        first_image = self.mosaicImage.imagefiles[0]
+        print self.mosaicImage.imagefiles,"imagefiles"
+        extent = self.mosaicImage.imageExtents[first_image] #a not so clean way to grab the first image extent
+        print "TRYING TO FIND EXTENT OF SECOND IMAGE?",extent
+        extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(first_image)[0],f_out,self.Parent.LoadImage(f_out)[0],extent)
 
         #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
-        (image,small_height,small_width)=self.Parent.LoadImage('d:\\User_Data\\Administrator\\Desktop\\mosaic.tif')
-        image = self.sixteen2eight(image)
-        
+        (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
+
+        print "drawing second image"
         self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
         self.Parent.mosaicCanvas.draw()
         self.Parent.mosaicCanvas.setImageExtent(extent2)
-        #Rest of images
-        return  
-        files = ['C:\\Program Files\\Micro-Manager-1.4\\Testfiles\\New Folder\\p1\\img_000000000_DAPI_000.tif',
-                 'C:\\Program Files\\Micro-Manager-1.4\\Testfiles\\New Folder\\p2\\img_000000000_DAPI_000.tif']
 
-  ##        self.newImage(extent2,files[0])
+        return
 
-        old_extent = extent2
-        for f in files:
-            old_extent = self.newImage(old_extent,f)
 
+    
+#END FIRST TEST
             
     def NextImage(self,evt="None"):
         #calls the real function
@@ -780,7 +825,6 @@ class MosaicPanel(FigureCanvas):
             return True
         
             newdir = 'C:\\Program Files\\Micro-Manager-1.4\\new_tiles\\'+str(x3)+str(y3)
-            os.mkdir(newdir)newdir = 'C:\\Program Files\\Micro-Manager-1.4\\new_tiles\\'+str(x3)+str(y3)
             os.mkdir(newdir)
             f_out = newdir+'\\'+'img_000000000_DAPI_000.tif'
             im.save(f_out)
@@ -856,8 +900,8 @@ class MosaicPanel(FigureCanvas):
 ##            img8 = Image.fromarray(array8)
 
             newdir = 'C:\\Program Files\\Micro-Manager-1.4\\new_tiles\\'+str(x3)+str(y3)
-            os.mkdir(newdir)newdir = 'C:\\Program Files\\Micro-Manager-1.4\\new_tiles\\'+str(x3)+str(y3)
-            os.mkdir(newdir)
+##            os.mkdir(newdir)  = 'C:\\Program Files\\Micro-Manager-1.4\\new_tiles\\'+str(x3)+str(y3)
+##            os.mkdir(newdir)
             f_out = newdir+'\\'+'img_000000000_DAPI_000.tif'
             im.save(f_out)
             
@@ -1274,7 +1318,7 @@ class ZVISelectFrame(wx.Frame):
         small_width)the width of the downsampled image
         
         """   
-        image = self.sixteen2eightB(Image.open(filename))
+        image = Image.open(filename)
         (big_width,big_height)=image.size;
         rescale=1 #CHANGED THIS TO 1 FROM 10, CAN CHANGE BACK BUT HAVE TO WORK IT INTO PADDING
         small_width=big_width/rescale   

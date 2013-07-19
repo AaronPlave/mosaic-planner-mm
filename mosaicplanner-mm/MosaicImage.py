@@ -155,15 +155,11 @@ class MosaicImage():
         #calculate the width of the image (calling it _um assuming its in units of microns)
         #from now on I will assume the units are in microns, though if they were in some other unit it would just carry through
         width_um=self.extent[1]-self.extent[0]
-##        print self.extent
         width_um *= .6     
         
-        #height_um=self.extent[2]-self.extent[3]
-##        print self.extent
         
         #calculate the pixels/micron of full resolution picture
         self.orig_um_per_pix=width_um/self.originalwidth
-##        print "px/micron of full res?",self.orig_um_per_pix
         
         #calculate the pixels/micron of the downsampled matrix 
         (matrix_height,matrix_width)=imagematrix.shape
@@ -185,42 +181,7 @@ class MosaicImage():
         
         self.axis.set_title('Mosaic Image')
 
-##
-##   import Image
-##    import MetadataHandler
-##    import numpy as np
-##
-##    def sixteen2eight(img16):
-##        """Converts 16 bit PIL image to 8 bit PIL image"""
-##        a = np.array(img16.getdata(),dtype='uint16')
-##        b=256.0*a/a.max()
-##        array8= np.reshape(b,(img16.size[1],img16.size[0]))
-##        img8 = Image.fromarray(array8)
-##        return img8
-
-##    files = ['G:\\6_17 Test DAPI 10x\\images\\1-Pos_000_000\\img_000000000_DAPI_000.tif',
-##                     'G:\\6_17 Test DAPI 10x\\images\\1-Pos_000_001\\img_000000000_DAPI_000.tif',
-##                     'G:\\6_17 Test DAPI 10x\\images\\1-Pos_000_002\\img_000000000_DAPI_000.tif',
-##                     'G:\\6_17 Test DAPI 10x\\images\\1-Pos_001_000\\img_000000000_DAPI_000.tif',
-##                     'G:\\6_17 Test DAPI 10x\\images\\1-Pos_001_001\\img_000000000_DAPI_000.tif',
-##                     'G:\\6_17 Test DAPI 10x\\images\\1-Pos_001_002\\img_000000000_DAPI_000.tif',
-##                     'G:\\6_17 Test DAPI 10x\\images\\1-Pos_002_000\\img_000000000_DAPI_000.tif',
-##                     'd:\User_Data\\Administrator\\Desktop\\mm\\New Folder\\TEST2\\Pos1\\img_000000000_Default_000.tif',
-##                     'd:\User_Data\\Administrator\\Desktop\\mm\\New Folder\\TEST2\\Pos2\\img_000000000_Default_000.tif',
-##                     'd:\User_Data\\Administrator\\Desktop\\mm\\New Folder\\TEST2\\Pos3\\img_000000000_Default_000.tif']
-##    stuff = []
-##    for i in files:
-##        ext = MetadataHandler.LoadMetadata(i)
-##        tile = sixteen2eight(Image.open(i))
-##        stuff.append((tile,ext))
-##
-##    print stuff
-
     def pad(self,mosaic,tile,mosaic_extent,tile_extent):
-##        print mosaic_extent,"me"
-##        mosaic.show()
-##        tile.show()
-##        print tile_extent,"te"
         #takes mosaic and pads based on current extent(in Um) and new extent,
         #returns new mosaic and new extent
 
@@ -251,23 +212,14 @@ class MosaicImage():
         #intoducing error?
         px1,px2 = [i/.6 for i in mosaic_extent],[i/.6 for i in tile_extent]
 
-        #size = tile_extent maxx - mosaic_extent minx..
         #Padding
         size_int = (abs(int(maxx/.6-minx/.6)),abs(int(maxy/.6-miny/.6)))
         
         im = Image.new('L',size_int)
-####        print px1,"px1"
-##        print px2,"px2"
-##        print minx/.6
-##        print miny/.6
         im.paste(mosaic,(int(abs(px1[0]-minx/.6)),int(abs(px1[3]-maxy/.6))))
         im.paste(tile,(abs(int(px2[0]-minx/.6)),int(abs(px2[3]-maxy/.6))))
-##        print int(px1[0]-minx/.6),int(abs(px1[2]-maxy/.6))
-##        print int(px2[0]-minx/.6),int(abs(px2[2]-maxy/.6))
-##        print size_int
-##        im.show()
-        im.save('d:\\User_Data\\Administrator\\Desktop\\mosaic.tif')
-##        print extent
+
+        im.save(os.path.join(os.getcwd(),'mosaic.tif'))
         return im,extent
         
     def extendMosaicTiff(self, mosaic, image_file_name, low_res_image_array, old_extent):
@@ -305,7 +257,7 @@ class MosaicImage():
             
             if x >= tile_extent[0] and x <= tile_extent[1]:
                 if y >= tile_extent[2] and y <= tile_extent[3]:   
-                    self.imagefile = img.replace('\\','\\')
+##                    self.imagefile = img.replace('\\','\\')
                     return self.imagefile
                 
         return False #did not find HightResImageFile containing x,y coords
@@ -542,18 +494,19 @@ class MosaicImage():
         
         """
         tile = self.findHighResImageFile(x,y)
-##        print x,y,"xy CUTOUT POS"
+        print x,y,"xy CUTOUT POS"
         (xpx,ypx)=self.convert_pos_to_orig_ind(x,y,tile)
         image=sixteen2eight(Image.open(tile.replace('\\','\\')))
-##        print xpx,ypx,"XPX,YPX"
+        image = Image.open(tile)
+        print xpx,ypx,"XPX,YPX"
         image=image.crop([xpx-window,ypx-window,xpx+window,ypx+window])
         #image=image.convert('L')
 ##        image.show()
         #enh = ImageEnhance.Contrast(image)
         #image=enh.enhance(1.5)   
         (width,height)=image.size
-##        print width,height
-##        image.show()
+        print width,height
+        image.show()
         
 
         #WHAT MODE SHOULD THIS BE?
