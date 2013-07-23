@@ -14,7 +14,7 @@ def sixteen2eightB(img16):
     return img8
 
 print "Current stage position: ",getXYZ()
-##
+
 ##p1 = (5232.75, -503.25, -35.209)
 ##p2 =(5232.75, -503.25, -35.209)
 
@@ -59,7 +59,7 @@ def main(num_pos):
     #and go!
     for i in range(num_pos):
         p3 = guess_next_linear(positions[-2],positions[-1])
-        get( p3,True)
+        get(p3,True)
         positions.append(p3)
         
     return positions
@@ -162,7 +162,7 @@ def autofocus(pos,steps,rough_step,fine_step):
 
     end = time.clock()
     
-    best[2].show()
+##    best[2].show()
     print "Run time = ",end-start
     
     if found == False:
@@ -174,7 +174,7 @@ def autofocus(pos,steps,rough_step,fine_step):
 ##
 ##mmc.setAutoShutter(0)
 ##mmc.setShutterOpen(1)
-##setExposure(50)
+setExposure(150)
 ##x = get(getXYZ(),True)
 ####main(1)
 ##mmc.setShutterOpen(0)

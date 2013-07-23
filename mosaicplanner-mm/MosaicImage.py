@@ -139,7 +139,7 @@ class MosaicImage():
 
         
         #read in the full resolution height/width using PIL
-        image = sixteen2eight(Image.open(imagefile))
+        image = Image.open(imagefile) #used to have sixteen2eight
         
         (self.originalwidth,self.originalheight)=image.size
         
@@ -216,8 +216,8 @@ class MosaicImage():
         size_int = (abs(int(maxx/.6-minx/.6)),abs(int(maxy/.6-miny/.6)))
         
         im = Image.new('L',size_int)
-        im.paste(mosaic,(int(abs(px1[0]-minx/.6)),int(abs(px1[3]-maxy/.6))))
-        im.paste(tile,(abs(int(px2[0]-minx/.6)),int(abs(px2[3]-maxy/.6))))
+        im.paste(mosaic,(int(abs(px1[1]-maxx/.6)),int(abs(px1[3]-maxy/.6)))) #change this to determine where things are in padding with respect to the axes  
+        im.paste(tile,(abs(int(px2[1]-maxx/.6)),int(abs(px2[3]-maxy/.6))))
 
         im.save(os.path.join(os.getcwd(),'mosaic.tif'))
         return im,extent
@@ -242,12 +242,14 @@ class MosaicImage():
 
     def findTileExtent(self,tile):
         if len(self.imagefiles) == 1:
+            print "len imagefiles = 1"
             return self.extent
         else:
             return self.imageExtents[tile]        
             
     
     def findHighResImageFile(self,x,y):
+        print "finding high res image file"
         #assume x and y are stage coordinates (in microns)
         
         for img in self.imagefiles: #eventually turn this into a dict instead of parsing each time
@@ -257,9 +259,9 @@ class MosaicImage():
             
             if x >= tile_extent[0] and x <= tile_extent[1]:
                 if y >= tile_extent[2] and y <= tile_extent[3]:   
-##                    self.imagefile = img.replace('\\','\\')
-                    return self.imagefile
-                
+                    print img,"IMG!"
+                    return img
+        print "no high res tile found"        
         return False #did not find HightResImageFile containing x,y coords
 
      
@@ -274,8 +276,8 @@ class MosaicImage():
         (matrix_height,matrix_width)=self.imagematrix.shape
         self.matrix_scale=matrix_width/width_um
 ##        print self.extent,"Eeee"
-        self.Image.set_extent(self.extent)
-        self.axis.set_xlim(self.extent[0],self.extent[1])
+        self.Image.set_extent((self.extent[1],self.extent[0],self.extent[2],self.extent[3]))
+        self.axis.set_xlim(self.extent[1],self.extent[0]) #changed from 0,1 to 1,0 on 7_22_13 to try to flip x-axis without reversing images
         if self.flipVert:
             self.axis.set_ylim(self.extent[3],self.extent[2])
         else:
@@ -326,11 +328,12 @@ class MosaicImage():
         dh=dh*scale;
         dw=dw*scale;
         if self.flipVert:
-            ext=[xc-dw,xc+dw,yc-dh,yc+dh]
+            print "flipVERT?!?!?!"
+            ext=[xc-dw,xc+dw,yc+dh,yc-dh] #would have to flip it here too
         else:
-            ext=[xc-dw,xc+dw,yc-dh,yc+dh]
+            ext=[xc+dw,xc-dw,yc-dh,yc+dh] #flipped x here
         image=theaxis.imshow(cut,cmap=cmap,extent=ext)
-        theaxis.set_xlim(xc-dw,xc+dw) 
+        theaxis.set_xlim(xc+dw,xc-dw)  #flipped x here too
         if self.flipVert:
             theaxis.set_ylim(yc-dh,yc+dh)
         else:
@@ -357,9 +360,9 @@ class MosaicImage():
         if self.flipVert:
             ext=[xc-dw,xc+dw,yc-dh,yc+dh]
         else:
-            ext=[xc-dw,xc+dw,yc-dh,yc+dh]
+            ext=[xc+dw,xc-dw,yc-dh,yc+dh]
         theimage.set_extent(ext)
-        theaxis.set_xlim(xc-dw,xc+dw) 
+        theaxis.set_xlim(xc+dw,xc-dw) #changed this for x switching cutouts?
         if self.flipVert:
             theaxis.set_ylim(yc-dh,yc+dh)
         else:
@@ -441,7 +444,7 @@ class MosaicImage():
         #update or create new
         if self.corrImage==None:
             self.corrImage=self.paintImageCenter(corrmat, self.corr_axis,skip=skip,cmap='jet')             
-            self.maxcorrPoint,=self.corr_axis.plot(dx,-dy,'ro')
+            self.maxcorrPoint,=self.corr_axis.plot(-dx,-dy,'ro')
 
             self.colorbar=self.corr_axis.figure.colorbar(self.corrImage,shrink=.9)
             self.corr_axis.set_title('Cross Correlation')
@@ -449,7 +452,7 @@ class MosaicImage():
           
         else:
             self.updateImageCenter(corrmat, self.corrImage, self.corr_axis,skip=skip)
-            self.maxcorrPoint.set_data(dx,-dy)   
+            self.maxcorrPoint.set_data(-dx,-dy)   
         #hard code the correlation maximum at .5
         self.corrImage.set_clim(0,.5)
 
@@ -463,9 +466,9 @@ class MosaicImage():
         returns) (x_pix,y_pix) the indices in pixels of that location
         
         """
-        
+        print "convert_pos info TILE,EXTENT",tile,self.extent
         extent = self.findTileExtent(tile) if tile else self.extent
-        x=x-extent[0]
+        x=x-extent[1] #CHANGED THIS TO FLIP X IN CUTOUTS
         #if self.flipVert:
         #    y=self.extent[2]-y
         #else:
@@ -495,18 +498,18 @@ class MosaicImage():
         """
         tile = self.findHighResImageFile(x,y)
         print x,y,"xy CUTOUT POS"
+        print tile,"TILE"       
         (xpx,ypx)=self.convert_pos_to_orig_ind(x,y,tile)
-        image=sixteen2eight(Image.open(tile.replace('\\','\\')))
+##        image=sixteen2eight(Image.open(tile.replace('\\','\\')))
         image = Image.open(tile)
-        print xpx,ypx,"XPX,YPX"
+##        print xpx,ypx,"XPX,YPX"
         image=image.crop([xpx-window,ypx-window,xpx+window,ypx+window])
         #image=image.convert('L')
 ##        image.show()
         #enh = ImageEnhance.Contrast(image)
         #image=enh.enhance(1.5)   
         (width,height)=image.size
-        print width,height
-        image.show()
+##        print width,height
         
 
         #WHAT MODE SHOULD THIS BE?

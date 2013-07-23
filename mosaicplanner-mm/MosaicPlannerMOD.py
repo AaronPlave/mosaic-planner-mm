@@ -550,7 +550,7 @@ class MosaicPanel(FigureCanvas):
         (corrval,dxy_um)=self.mosaicImage.align_by_correlation((self.posList.pos1.x,self.posList.pos1.y),(self.posList.pos2.x,self.posList.pos2.y),window,delta,1)
         (dx_um,dy_um)=dxy_um
         
-        self.posList.pos2.shiftPosition(-dx_um,dy_um) #watch out for this shi(f)t.. gets weird
+        self.posList.pos2.shiftPosition(dx_um,dy_um) #watch out for this shi(f)t.. gets weird
         #self.draw()
         return corrval
           
@@ -654,11 +654,12 @@ class MosaicPanel(FigureCanvas):
         print "POS BEFORE AUTOFOCUS",orig_pos
         MM_AT.setAutoShutter(0)
         MM_AT.setShutter(1)
+        MM_AT.setExposure(150)
         (pos,score,im) = Acq.get(orig_pos,True)
         print x,"ACQ RESULT"
         print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
         print pos,"pos from auto"
-        MM_AT.setShutter(0)
+##        MM_AT.setShutter(0)
 
         
         #check if tile folder exists
@@ -675,7 +676,7 @@ class MosaicPanel(FigureCanvas):
         f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
         im.save(f_out)
         
-        #write new image metadata to file, fix pixel size, currently not grabbing right
+        #write new image metadata to file, fix pixel size, currently not grabbing right 
         width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
         d = {"Summary":{"Width":width,"Height":height,
                         "PixelSize_um":Pxsize},
@@ -685,7 +686,7 @@ class MosaicPanel(FigureCanvas):
         new_meta.write(meta)
         new_meta.close()
 
-        #calculate extent ------COULD PROBABLY JUST USE THE IM FROM MEMORY, OR ELSE CLOSE IT
+        #calculate extent ------COULD PROBABLY JUST USE THE IMG FROM MEMORY, OR ELSE CLOSE IT
         extent = MetadataHandler.LoadMetadata(f_out)
         (image,small_height,small_width)=self.Parent.LoadImage(f_out)
         
@@ -710,7 +711,9 @@ class MosaicPanel(FigureCanvas):
         self.Parent.mosaicCanvas.draw()
         self.Parent.mosaicCanvas.setImageExtent(extent)
 
-        print "Now manually set second position via looking through scope." 
+        print "Now manually set second position via looking through scope."
+        print self.mosaicImage.imagefiles,"imagefiles"
+        print extent,"EXTENT 1"
         return
 
     
@@ -733,7 +736,7 @@ class MosaicPanel(FigureCanvas):
         new_tiles = os.path.join(os.getcwd(),'new_tiles')
         if not os.path.exists(new_tiles):
             os.mkdir('new_tiles')
-            print "PROBLEM, NOT FINDING new_tiles AND OVERWRITING"
+            print "PROBLEM, NOT FINDING new_tiles"
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
@@ -755,31 +758,23 @@ class MosaicPanel(FigureCanvas):
 
         #calculating new extent and padding
         first_image = self.mosaicImage.imagefiles[0]
-        print self.mosaicImage.imagefiles,"imagefiles"
         extent = self.mosaicImage.imageExtents[first_image] #a not so clean way to grab the first image extent
-        print "TRYING TO FIND EXTENT OF SECOND IMAGE?",extent
         extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(first_image)[0],f_out,self.Parent.LoadImage(f_out)[0],extent)
 
         #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
         (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
 
-        print "drawing second image"
         self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
         self.Parent.mosaicCanvas.draw()
         self.Parent.mosaicCanvas.setImageExtent(extent2)
-
         return
-
-
-    
-#END FIRST TEST
             
     def NextImage(self,evt="None"):
         #calls the real function
         go = True
         counter = 0
         while go:
-            if counter == 5:
+            if counter == 2:
                 print "reached counter limit"
                 break
             go = self.AcquireNext()
@@ -788,177 +783,137 @@ class MosaicPanel(FigureCanvas):
     def AcquireNext(self):
         #also might want to move this to MosaicImage
         #stop condition??
-        
-        #check for/make dir for next images
         print "ANOTHER ROUND OF ACQUIRE NEXT"
-        if not os.path.exists('C:\\Program Files\Micro-Manager-1.4\\new_tiles'):
-            os.mkdir('new_tiles') #HAVE TO ADD THIS DIR TO findHighResImageFIle CHECKING?
-            
+        
         #guess next tile from previous coordinates
         newpos=self.posList.new_position_after_step()
         if newpos == None:
             print "newpos false"
             return False
+        
         print "newpos",newpos
         x3,y3,z3 = self.posList.pos2.x,self.posList.pos2.y,MM_AT.getXYZ()[2]
         print x3,y3,z3,"x3,y3,z3 ##############################################"
-
-
-        ######TEMPORARY, SO HAVE GOOD STARTING POSITIONS#######
-        p1 = (74.25, -34.0, -72.57900000000001)
-        p2 = (-907.75, 266.75, -72.57900000000001)
-        (x3,y3,z3) = p2
-
-
         
-        #image capture and corr
-        corr = self.image_capture_and_corr(x3,y3,z3)
-        return 
-
-
-
-
-
+        #image capture, if true then successfully acquired image or found image in mosaic
+        img = self.image_capture(x3,y3,z3)
+        corr = self.cross_corr()
+        print corr,"CORR"
+    
+  #################### ends here for now ############
 
         #if good match
         if corr:
             return True
         
-            newdir = 'C:\\Program Files\\Micro-Manager-1.4\\new_tiles\\'+str(x3)+str(y3)
-            os.mkdir(newdir)
-            f_out = newdir+'\\'+'img_000000000_DAPI_000.tif'
-            im.save(f_out)
-            
-            #write new image metadata to file, fix pixel size, currently not grabbing right
-            width,height,Pxsize,Xpos,Ypos = img16[1],img16[2],.6,x3,y3
-            d = {"Summary":{"Width":width,"Height":height,
-                            "PixelSize_um":Pxsize},
-                 "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos}}   
-            meta = json.dumps(d)
-            new_meta = open(newdir+'\\'+'metadata.txt','w')
-            new_meta.write(meta)
-            new_meta.close()
-            
-            #add new image to mosaic
-##            print self.mosaicImage.extent
-##            print newdir+'\\'+'metadata.txt'
-            self.newImage(self.mosaicImage.extent,newdir+'\\'+'img_000000000_DAPI_000.tif')
-            f_out = newdir+'\\'+'img_000000000_DAPI_000.tif'
-            im.save(f_out)
-            
-            #write new image metadata to file, fix pixel size, currently not grabbing right
-            width,height,Pxsize,Xpos,Ypos = img16[1],img16[2],.6,x3,y3
-            d = {"Summary":{"Width":width,"Height":height,
-                            "PixelSize_um":Pxsize},
-                 "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos}}   
-            meta = json.dumps(d)
-            new_meta = open(newdir+'\\'+'metadata.txt','w')
-            new_meta.write(meta)
-            new_meta.close()
-            
-            #add new image to mosaic
-##            print self.mosaicImage.extent
-##            print newdir+'\\'+'metadata.txt'
-            self.newImage(self.mosaicImage.extent,newdir+'\\'+'img_000000000_DAPI_000.tif')        #if bad match
+        #if bad match AFTER extended window size correlation
         else:
-            box = self.surrounding_three()
-            for point in box:
-                print point,point[0],point[1],"POINTS FROM BOX"
-                corr = self.image_capture_and_corr(point[0],point[1])
-                if corr > .3:
-                    print "found it here",
-                    return True
-                #could remove the tile here if it's not good, but eh.
-                else:
-                    print "no match, trying next tile in box"
-            #fail condition, what to do here?
-            print "no successful matches, game over, more testing required, your castle was overrun, go home, you lose, sciencefail."
-            return False
+            corr = self.cross_corr(window=300) #how much window expansion here?
+            if corr:
+                return True
+            else:
+
+                #FOR NOW
+                print "going to boxes, stopping now"
+                return False
+            
+                box = self.surrounding_box() #autofocus on boxes? no for now.
+                z = MM_AT.getXYZ()[2]
+                for point in box:
+                    print point,point[0],point[1],"POINTS FROM BOX"
+                    img = self.image_capture(point[0],point[1],z)
+                    corr = self.cross_corr()
+                    if corr > .3:
+                        print "found it here",
+                        return True
+                    #could remove the tile here if it's not good, but eh.
+                    else: #probably should tell it to cross corr towards the middle box or else this is fairly usless..
+                        print "no match, trying next tile in box"
+                #fail condition, what to do here?
+                print "no successful matches, game over, more testing required, your castle was overrun, go home, you lose, sciencefail."
+                return False
            
  
-    def image_capture_and_corr(self,x3,y3,z3):
+    def image_capture(self,x3,y3,z3):
+        
         #check if x3,y3 is a point already in the mosaic using findhighrestile
         check = self.mosaicImage.findHighResImageFile(x3,y3)
         
         if check:
             print "point already in mosaic"
             #down to cross corr
-            corr = self.cross_corr()
+            return True
 
         else:
-            print "point outside of current mosaic, acquiring new tile"
-            #acquire next tile
-            MM_AT.setExposure(50)
-            MM_AT.setAutoShutter(0)            
-            MM_AT.setShutter(1)
-            (xyz,score,im) = Acq.get((x3,y3,z3),True)
-                        
-            #convert to 8 bit, different from the normal function since not from file, BUT DONE IN ACQ
-##            a = img16[0]
-##            b=256.0*a/a.max()
-##            array8= np.reshape(b,(img16[2],img16[1]))
-##            img8 = Image.fromarray(array8)
+            try:
+                #grab next image from microscope
+                MM_AT.setXY(x3,y3)
+                Acq.wait_XYstage() #for now these are fixed at time.sleep(.2) since it's been tricky to get the communication checks working
+                MM_AT.setZ(z3)
+                Acq.wait_Zstage()
+                orig_pos = MM_AT.getXYZ()
+                print "point not in current mosaic, acquiring new image"
+                print "POS BEFORE AUTOFOCUS",MM_AT.getXYZ()
+                MM_AT.setAutoShutter(0)
+                MM_AT.setShutter(1)
+                (pos,score,im) = Acq.get(orig_pos,True)
+                print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
+                print pos,"pos from auto"
+                MM_AT.setShutter(0)
 
-            newdir = 'C:\\Program Files\\Micro-Manager-1.4\\new_tiles\\'+str(x3)+str(y3)
-##            os.mkdir(newdir)  = 'C:\\Program Files\\Micro-Manager-1.4\\new_tiles\\'+str(x3)+str(y3)
-##            os.mkdir(newdir)
-            f_out = newdir+'\\'+'img_000000000_DAPI_000.tif'
-            im.save(f_out)
+                
+                #create new dir for image, save im
+                (x,y,z) = MM_AT.getXYZ()
+                str_xyz = str((x,y,z))
+                new_tiles = os.path.join(os.getcwd(),'new_tiles')
+                newdir = os.path.join(new_tiles,str_xyz)
+                os.mkdir(newdir)
+                f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
+                im.save(f_out)
+                
+                #write new image metadata to file, fix pixel size, currently not grabbing right
+                width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
+                d = {"Summary":{"Width":width,"Height":height,
+                                "PixelSize_um":Pxsize},
+                     "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
+                meta = json.dumps(d)
+                new_meta = open(os.path.join(newdir,'metadata.txt'),'w')
+                new_meta.write(meta)
+                new_meta.close()
+
+                #calculating new extent and padding
+                extent = self.mosaicImage.extent
+                mosaic = self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))[0]
+                print "Is this right extent for mosaic?",extent
+                print mosaic
+                extent2 = self.mosaicImage.extendMosaicTiff(mosaic,f_out,self.Parent.LoadImage(f_out)[0],extent)
+
+                #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
+                (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
+
+                self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
+                self.Parent.mosaicCanvas.draw()
+                self.Parent.mosaicCanvas.setImageExtent(extent2)
+
+                return True
             
-            #write new image metadata to file, fix pixel size, currently not grabbing right
-            width,height,Pxsize,Xpos,Ypos = img16[1],img16[2],.6,x3,y3
-            d = {"Summary":{"Width":width,"Height":height,
-                            "PixelSize_um":Pxsize},
-                 "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos}}   
-            meta = json.dumps(d)
-            new_meta = open(newdir+'\\'+'metadata.txt','w')
-            new_meta.write(meta)
-            new_meta.close()
-            
-            #add new image to mosaic
-##            print self.mosaicImage.extent
-##            print newdir+'\\'+'metadata.txt'
-            self.newImage(self.mosaicImage.extent,newdir+'\\'+'img_000000000_DAPI_000.tif')
-            f_out = newdir+'\\'+'img_000000000_DAPI_000.tif'
-            im.save(f_out)
-            
-            #write new image metadata to file, fix pixel size, currently not grabbing right
-            width,height,Pxsize,Xpos,Ypos = img16[1],img16[2],.6,x3,y3
-            d = {"Summary":{"Width":width,"Height":height,
-                            "PixelSize_um":Pxsize},
-                 "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos}}   
-            meta = json.dumps(d)
-            new_meta = open(newdir+'\\'+'metadata.txt','w')
-            new_meta.write(meta)
-            new_meta.close()
-            
-            #add new image to mosaic
-##            print self.mosaicImage.extent
-##            print newdir+'\\'+'metadata.txt'
-            self.newImage(self.mosaicImage.extent,newdir+'\\'+'img_000000000_DAPI_000.tif')
-            
-            #cross correllate new tile with last position
-            corr = self.cross_corr()
-            
-        return corr
+            except:
+                print "Unable to grab and process next image"
+                return False
     
-    def cross_corr(self):
+    def cross_corr(self,window=100):
         """
         Cross corr for MM
         """
         corrval=self.CorrTool(window=100,delta=75,skip=3)
         corrval=self.CorrTool(window=100,delta=75,skip=3) #doing this twice for now since corr is broken
         #if good match:
-        if corrval > .3:
+        if corrval > .35:
             return True
         else:
             return False
-        #if bad match:
-            #take tiles surrounding point, i.e. increase search range
-            #manual intervention?
-            #say screw it and come back to the point later?  
-
-    def surrounding_three(self):
+        
+    def surrounding_box(self): #not first resort.
         """
         Generates box of surrounding tiles using pos2. Named p1 through p8, starting top left, going to the right and down a row, snake pattern (for now).
         """
@@ -1395,7 +1350,6 @@ class ZVISelectFrame(wx.Frame):
         #passes the settings to the position list
         (pts_from,pts_to,transformType,flipVert,flipHoriz)=dlg.GetTransformInfo()
         print transformType
-
         self.Transform.set_transform_by_fit(pts_from,pts_to,mode=transformType,flipVert=flipVert,flipHoriz=flipHoriz)
         for index,pt in enumerate(pts_from):
             (xp,yp)=self.Transform.transform(pt.x,pt.y)
