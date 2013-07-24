@@ -1,0 +1,37 @@
+TODO:
+
+Ranked in order of importance, at least for the first few.
+
+#Test 63x acquisition and write a script to modify the Micro-Manager output to match axiovision metadata output
+
+#Backwards compatibility with original Mosaic Planner
+
+#Allow user to set parameters like focus settings, cross corr coefficient used for good match, number of slices (for determining when to stop), search window size for correllation, maybe number of searches and window sizes?
+
+#Proper closing of mmcore when Mosaic Planner is quit
+
+#Icons for new functions
+
+------Unordered---------
+
+#optimize cross-correlation:
+	  -Threading?
+	  -Smaller windows?
+	  -Non-repetitive searches, i.e. rings around the middle, excluding previous region of search
+	  -Make it work better the first time
+
+#Save a session
+
+#Reload a session
+
+#Delete an image
+
+#Manually add an image (more than just the first two), could use this after failure if not the end of ribbon
+
+#Have mosaic Planner NOT freeze up during acquisition
+
+#More testing for bugs
+
+#Fix boxes/get rid of them
+
+
