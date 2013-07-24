@@ -55,7 +55,7 @@ def LoadAxioVisionXMLMetaData(filename):
 
 def LoadMMMetaData(filename):
     """retrieves and parses metadata from mm folder..."""
-    print "loading MM Metadata"
+##    print "loading MM Metadata"
     file = open(filename,'r')
     data = file.read()
     file.close()
@@ -77,7 +77,7 @@ def LoadMMMetaData(filename):
            ypos-(Height/2)*ScaleFactorY,ypos+(Height/2)*ScaleFactorY] #FOR NOW
 
         #WHY WAS IT + THEN - FOR Y??
-    print extent, "HERE"
+##    print extent, "HERE"
     return extent
     
 def LoadZVIMetaData(filename):
@@ -108,7 +108,7 @@ def LoadZVIMetaData(filename):
     return extent
 
 def LoadMetadata(filename):
-    print filename
+##    print filename
     globbed=glob.glob(os.path.join(os.path.dirname(filename),'*.zvi'))
     if globbed:
         return LoadZVIMetaData(globbed[0])

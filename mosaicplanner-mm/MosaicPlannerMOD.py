@@ -429,7 +429,7 @@ class MosaicPanel(FigureCanvas):
     
     def OnHomeTool(self):
         """handler which overrides the usual behavior of the home button, just resets the zoom on the main subplot for the mosaicImage"""
-        self.subplot.set_xlim(self.mosaicImage.extent[0],self.mosaicImage.extent[1])
+        self.subplot.set_xlim(self.mosaicImage.extent[1],self.mosaicImage.extent[0])
         self.subplot.set_ylim(self.mosaicImage.extent[2],self.mosaicImage.extent[3])
         self.draw()
            
@@ -631,7 +631,7 @@ class MosaicPanel(FigureCanvas):
         #in the beginning and the rest will be acquired on the fly
 
         #get new image with attributes
-        (image,small_height,small_width)=self.Parent.LoadImage(filename)
+        (image,small_height,small_width)=self.Parent.LoadImage(filename,False)
 
         #set extent
         old_mosaic = self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
@@ -647,20 +647,22 @@ class MosaicPanel(FigureCanvas):
         return new_extent
 
     def ButtonLoad(self,evt="None"):
+
+        #PUT THIS IN POSLIST LATER
+        self.z_positions = []
         
         #grab first image from microscope
         (x,y,z) = MM_AT.getXYZ()
         orig_pos = (x,y,z)
-        print "POS BEFORE AUTOFOCUS",orig_pos
+##        print "POS BEFORE AUTOFOCUS",orig_pos
         MM_AT.setAutoShutter(0)
         MM_AT.setShutter(1)
         MM_AT.setExposure(150)
         (pos,score,im) = Acq.get(orig_pos,True)
-        print x,"ACQ RESULT"
-        print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
-        print pos,"pos from auto"
+##        print x,"ACQ RESULT"
+##        print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
+##        print pos,"pos from auto"
 ##        MM_AT.setShutter(0)
-
         
         #check if tile folder exists
         new_tiles = os.path.join(os.getcwd(),'new_tiles')
@@ -670,6 +672,7 @@ class MosaicPanel(FigureCanvas):
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
+        self.z_positions.append(z)
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -688,7 +691,7 @@ class MosaicPanel(FigureCanvas):
 
         #calculate extent ------COULD PROBABLY JUST USE THE IMG FROM MEMORY, OR ELSE CLOSE IT
         extent = MetadataHandler.LoadMetadata(f_out)
-        (image,small_height,small_width)=self.Parent.LoadImage(f_out)
+        (image,small_height,small_width)=self.Parent.LoadImage(f_out,True) #scaling = yes
         
 
 ##########################################
@@ -712,8 +715,6 @@ class MosaicPanel(FigureCanvas):
         self.Parent.mosaicCanvas.setImageExtent(extent)
 
         print "Now manually set second position via looking through scope."
-        print self.mosaicImage.imagefiles,"imagefiles"
-        print extent,"EXTENT 1"
         return
 
     
@@ -723,13 +724,13 @@ class MosaicPanel(FigureCanvas):
         #grab second image from microscope
         (x,y,z) = MM_AT.getXYZ()
         orig_pos = (x,y,z)
-        print "POS BEFORE AUTOFOCUS",orig_pos
+##        print "POS BEFORE AUTOFOCUS",orig_pos
         MM_AT.setAutoShutter(0)
         MM_AT.setShutter(1)
         (pos,score,im) = Acq.get(orig_pos,True)
-        print x,"ACQ RESULT"
-        print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
-        print pos,"pos from auto"
+##        print x,"ACQ RESULT"
+##        print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
+##        print pos,"pos from auto"
         MM_AT.setShutter(0)
 
         #check if tile folder self.Parent.mosaicCanvas.setImageExtent(extent)exists
@@ -740,6 +741,7 @@ class MosaicPanel(FigureCanvas):
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
+        self.z_positions.append(z)
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -759,31 +761,45 @@ class MosaicPanel(FigureCanvas):
         #calculating new extent and padding
         first_image = self.mosaicImage.imagefiles[0]
         extent = self.mosaicImage.imageExtents[first_image] #a not so clean way to grab the first image extent
-        extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(first_image)[0],f_out,self.Parent.LoadImage(f_out)[0],extent)
+        extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(first_image)[0],f_out,self.Parent.LoadImage(f_out,True)[0],extent) #scaling only low res param
 
         #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
-        (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
-
+        (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'),False) #no scaling here, already scaled        
+        
         self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
         self.Parent.mosaicCanvas.draw()
         self.Parent.mosaicCanvas.setImageExtent(extent2)
         return
+
+
+    def z_diff(self,p1,p2):
+        """
+        Calculates z diff between two points, maybe change this later to return a range of acceptable
+        Z focus?
+        """
+        print "delta Z from p1 to p2 = ", p2-p1
+
             
     def NextImage(self,evt="None"):
         #calls the real function
         go = True
         counter = 0
+        acq_start = time.clock()
         while go:
-            if counter == 2:
+            print "ROUND " + str(counter+1)
+            if counter == 25:
                 print "reached counter limit"
                 break
             go = self.AcquireNext()
+            self.z_diff(self.z_positions[-2],self.z_positions[-1])
             counter += 1
+        print "Total acq time = ",time.clock()-acq_start
+        print "Number of rounds completed = ",counter
+        
 
     def AcquireNext(self):
         #also might want to move this to MosaicImage
         #stop condition??
-        print "ANOTHER ROUND OF ACQUIRE NEXT"
         
         #guess next tile from previous coordinates
         newpos=self.posList.new_position_after_step()
@@ -796,33 +812,51 @@ class MosaicPanel(FigureCanvas):
         print x3,y3,z3,"x3,y3,z3 ##############################################"
         
         #image capture, if true then successfully acquired image or found image in mosaic
+
+        start_capt = time.clock()
         img = self.image_capture(x3,y3,z3)
+        self.z_positions.append(z3)
+        print self.z_positions,"Zzzzs"
+        print "image_capture time = ",time.clock()-start_capt
+
+        start_corr = time.clock()
         corr = self.cross_corr()
-        print corr,"CORR"
+        print "corr time = ",time.clock()-start_corr
     
   #################### ends here for now ############
 
         #if good match
         if corr:
+            print "good match on first try with window=100"
             return True
         
         #if bad match AFTER extended window size correlation
         else:
+            start_corr300 = time.clock() 
             corr = self.cross_corr(window=300) #how much window expansion here?
+            print "corr 300 time = ", time.clock()-start_corr300
             if corr:
+                print "good match with window=300"
+                return True
+
+            start_corr600 = time.clock()
+            corr = self.cross_corr(window=600)
+            print "corr 600 time = ",time.clock()-start_corr600
+            if corr:
+                print "good match with windpow=600" 
                 return True
             else:
-
+                print "no boxes for you. boxes bad."
+                return
                 #FOR NOW
-                print "going to boxes, stopping now"
-                return False
-            
+                print "going to boxes"
+                    
                 box = self.surrounding_box() #autofocus on boxes? no for now.
                 z = MM_AT.getXYZ()[2]
                 for point in box:
                     print point,point[0],point[1],"POINTS FROM BOX"
                     img = self.image_capture(point[0],point[1],z)
-                    corr = self.cross_corr()
+                    corr = self.cross_corr(window=600)
                     if corr > .3:
                         print "found it here",
                         return True
@@ -845,62 +879,61 @@ class MosaicPanel(FigureCanvas):
             return True
 
         else:
-            try:
-                #grab next image from microscope
-                MM_AT.setXY(x3,y3)
-                Acq.wait_XYstage() #for now these are fixed at time.sleep(.2) since it's been tricky to get the communication checks working
-                MM_AT.setZ(z3)
-                Acq.wait_Zstage()
-                orig_pos = MM_AT.getXYZ()
-                print "point not in current mosaic, acquiring new image"
-                print "POS BEFORE AUTOFOCUS",MM_AT.getXYZ()
-                MM_AT.setAutoShutter(0)
-                MM_AT.setShutter(1)
-                (pos,score,im) = Acq.get(orig_pos,True)
-                print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
-                print pos,"pos from auto"
-                MM_AT.setShutter(0)
-
-                
-                #create new dir for image, save im
-                (x,y,z) = MM_AT.getXYZ()
-                str_xyz = str((x,y,z))
-                new_tiles = os.path.join(os.getcwd(),'new_tiles')
-                newdir = os.path.join(new_tiles,str_xyz)
-                os.mkdir(newdir)
-                f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
-                im.save(f_out)
-                
-                #write new image metadata to file, fix pixel size, currently not grabbing right
-                width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
-                d = {"Summary":{"Width":width,"Height":height,
-                                "PixelSize_um":Pxsize},
-                     "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
-                meta = json.dumps(d)
-                new_meta = open(os.path.join(newdir,'metadata.txt'),'w')
-                new_meta.write(meta)
-                new_meta.close()
-
-                #calculating new extent and padding
-                extent = self.mosaicImage.extent
-                mosaic = self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))[0]
-                print "Is this right extent for mosaic?",extent
-                print mosaic
-                extent2 = self.mosaicImage.extendMosaicTiff(mosaic,f_out,self.Parent.LoadImage(f_out)[0],extent)
-
-                #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
-                (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
-
-                self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
-                self.Parent.mosaicCanvas.draw()
-                self.Parent.mosaicCanvas.setImageExtent(extent2)
-
-                return True
+##            try:
+            #grab next image from microscope
+            MM_AT.setXY(x3,y3)
+            Acq.wait_XYstage() #for now these are fixed at time.sleep(.2) since it's been tricky to get the communication checks working
+            MM_AT.setZ(z3)
+            Acq.wait_Zstage()
+            orig_pos = MM_AT.getXYZ()
+            print "point not in current mosaic, acquiring new image"
+            print "POS BEFORE AUTOFOCUS",MM_AT.getXYZ()
+            MM_AT.setAutoShutter(0)
+            MM_AT.setShutter(1)
+            (pos,score,im) = Acq.get(orig_pos,True)
+            print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
+            print pos,"pos from auto"
+            MM_AT.setShutter(0)
             
-            except:
-                print "Unable to grab and process next image"
-                return False
-    
+            #create new dir for image, save im
+            (x,y,z) = MM_AT.getXYZ()
+            str_xyz = str((x,y,z))
+            new_tiles = os.path.join(os.getcwd(),'new_tiles')
+            newdir = os.path.join(new_tiles,str_xyz)
+            os.mkdir(newdir)
+            f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
+            im.save(f_out)
+            
+            #write new image metadata to file, fix pixel size, currently not grabbing right
+            width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
+            d = {"Summary":{"Width":width,"Height":height,
+                            "PixelSize_um":Pxsize},
+                 "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
+            meta = json.dumps(d)
+            new_meta = open(os.path.join(newdir,'metadata.txt'),'w')
+            new_meta.write(meta)
+            new_meta.close()
+
+            #calculating new extent and padding
+            extent = self.mosaicImage.extent
+
+            mosaic = self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'),False)[0]
+            
+            extent2 = self.mosaicImage.extendMosaicTiff(mosaic,f_out,self.Parent.LoadImage(f_out,True)[0],extent)
+            
+            #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
+            (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'),False)
+
+            self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
+            self.Parent.mosaicCanvas.draw()
+            self.Parent.mosaicCanvas.setImageExtent(extent2)
+
+            return True
+        
+##	    except:
+##		print "Unable to grab and process next image"
+##		return False
+##    
     def cross_corr(self,window=100):
         """
         Cross corr for MM
@@ -908,7 +941,7 @@ class MosaicPanel(FigureCanvas):
         corrval=self.CorrTool(window=100,delta=75,skip=3)
         corrval=self.CorrTool(window=100,delta=75,skip=3) #doing this twice for now since corr is broken
         #if good match:
-        if corrval > .35:
+        if corrval > .3:
             return True
         else:
             return False
@@ -1261,7 +1294,7 @@ class ZVISelectFrame(wx.Frame):
         return img8
     
     
-    def LoadImage(self,filename):
+    def LoadImage(self,filename,scale=True):
         """function for loading images using PIL, returns a downsized PIL image
         
         keywords:
@@ -1270,18 +1303,28 @@ class ZVISelectFrame(wx.Frame):
         returns (image,small_height,small_width)
         image)returns a PIL image of the
         small_height)the height of the downsampled image
-        small_width)the width of the downsampled image
+        small_width)the width of the downsampled image  
         
         """   
         image = Image.open(filename)
         (big_width,big_height)=image.size;
-        rescale=1 #CHANGED THIS TO 1 FROM 10, CAN CHANGE BACK BUT HAVE TO WORK IT INTO PADDING
-        small_width=big_width/rescale   
-        small_height=big_height/rescale       
-        image=image.resize((small_width,small_height))  
-        return (image,small_height,small_width)        
-    
-    
+        if scale == True:
+            print "scaling, ",filename
+            rescale=10 #CHANGED THIS TO 1 FROM 10, CAN CHANGE BACK BUT HAVE TO WORK IT INTO PADDING
+            small_width=big_width/rescale   
+            small_height=big_height/rescale       
+            image=image.resize((small_width,small_height))
+##            image.show()
+            return (image,small_height,small_width)        
+        elif scale == False:
+            print "NOT scaling, ",filename
+##            image.show()
+            image_copy = image.copy()
+            return (image_copy,big_height,big_width)    
+        else:
+            print "can't get here..?"
+
+            
     def OnMetaLoad(self,evt):
         if self.meta_formatBox.GetValue()=='MM':
             extent=MetadataHandler.LoadMetadata(self.meta_filepicker.GetPath())

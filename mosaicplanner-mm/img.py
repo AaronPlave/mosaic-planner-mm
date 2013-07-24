@@ -15,9 +15,6 @@ def sixteen2eightB(img16):
 
 print "Current stage position: ",getXYZ()
 
-##p1 = (5232.75, -503.25, -35.209)
-##p2 =(5232.75, -503.25, -35.209)
-
 
 def wait_Zstage(): #could also do a while getXYZ != target, pass?
 ##    while mmc.deviceBusy('ZeissFocusAxis'):
@@ -42,15 +39,13 @@ def get(pos,auto=False): #hmm, have get calling auto and auto calling get. bad.
         im = sixteen2eightB(snapImage())
         return im
 
-def guess_next_linear(p1,p2): #should eventually modify to include a real Z guess
+def guess_next_linear(p1,p2): #eventually modify to include a real Z guess?
     dx,dy = p2[0]-p1[0],p2[1]-p1[1]
     p3 = (p2[0]+dx,p2[1]+dy,p2[2]) #just using last Z for current Z
-    print p3,"p3 guess"
+##    print p3,"p3 guess"
     return p3
 
 def main(num_pos):
-##    p1 = (74.25, -34.0, -72.57900000000001)
-##    p2 = (-907.75, 266.75, -72.57900000000001)
     setXY(p2[0],p2[1])
 
     #All the positions
@@ -74,6 +69,7 @@ def autofocus(pos,steps,rough_step,fine_step):
     """
     Basic autofocus, improve later, use MM if possible?
     """
+##    print "starting autofocus"
     start = time.clock()
 
     #set initial position
@@ -82,36 +78,26 @@ def autofocus(pos,steps,rough_step,fine_step):
     setZ(pos[2])
     wait_Zstage()
 
-    #get pos, current image, and current sharpness
-    print "AUTOFOCUS STARTED AT POSITION --> ",getXYZ()
     xyz = getXYZ()
     im = get(xyz)
     best = (xyz,sharpness(im),im)
-    print "original score to beat --> ",best[1]
     
     #rough focus list######
     z = xyz[2]
     plus_r = [z + step*rough_step for step in range(1,steps+1)]
     minus_r = [z - step*rough_step for step in range(1,steps+1)]
     roughs = plus_r+minus_r
-    print roughs,"roughs"
 
     streak = 0
     found = False
-    print "rough focusing"
     for i in roughs:
         setZ(i)
-##        print "SHOULD BE AT Z POS",i
         wait_Zstage()
         pos = getXYZ()
-        print pos
-##        print "Z POS IS ",pos
         im = get(pos)
-##        im.show()
         score = sharpness(im)
         if score > best[1]:
             best = (pos,score,im)
-            print "better score at pos: ", pos, " score: ",score
             streak = +1
             found = True
 
@@ -121,59 +107,52 @@ def autofocus(pos,steps,rough_step,fine_step):
                     break 
                 else:
                     streak += 1
-    print found,streak     
 
-    print "best rough pos --> ", best[0]
 
     #fine focus list#########
     z = best[0][2]
-    print "score to beat --> ",best[1]
     plus = [z + step*fine_step for step in range(1,steps+1)]
     minus = [z - step*fine_step for step in range(1,steps+1)]
     fines = plus+minus
-    print fines
 
     streak = 0
     found = False
-    print "fine focusing"
     for i in fines:
         setZ(i)
         wait_Zstage()
         pos = getXYZ() 
-        print pos
         im = get(pos)
         score = sharpness(im)
-##        print score
         if score > best[1]:
             best = (pos,score,im)
-            print "better score at pos: ", pos, " score: ",score
             streak = +1
             found = True
 
         else:
             if found == True:
+               ##        print "current pos is best"
                 if streak == 3:
                     break 
                 else:
                     streak += 1
 
     ##finished##
-    print "sharpest image --> ", best
+##    print "sharpest image --> ", best
 
     end = time.clock()
     
-##    best[2].show()
-    print "Run time = ",end-start
+##    print "Run time = ",end-start
     
     if found == False:
-        print "current pos is best"
-    setZ(best[0][2])
+##        print "current pos is best"
+        setZ(best[0][2])
+    time.sleep(.1)
     return best
 
 ##
 ##
-##mmc.setAutoShutter(0)
-##mmc.setShutterOpen(1)
+mmc.setAutoShutter(0)
+mmc.setShutterOpen(1)
 setExposure(150)
 ##x = get(getXYZ(),True)
 ####main(1)
@@ -181,8 +160,19 @@ setExposure(150)
 ##
 ##
 
+def main2():
+    mmc.setAutoShutter(0)
+    mmc.setShutterOpen(1)
+    start = time.clock()
+    a = get(getXYZ(),True)
+    stop = time.clock()
+    print "Run time = ",stop-start," seconds"
+    print a
+    a[2].show()
+    mmc.setShutterOpen(0)
+    return a
 
-
+##main2()
 
 
 		

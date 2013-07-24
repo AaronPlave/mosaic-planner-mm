@@ -23,6 +23,7 @@ import ImageEnhance
 import numpy as np
 import threading
 import os
+import time
 import Queue
 from CenterRectangle import CenterRectangle
 from matplotlib.lines import Line2D
@@ -77,14 +78,6 @@ def mycorrelate2d(fixed,moved,skip=3):
     return corrmat
 
 
-def sixteen2eight(img16):
-    """Converts 16 bit PIL image to 8 bit PIL image"""
-    a = np.array(img16.getdata(),dtype='uint16')
-    b=256.0*a/a.max()
-    array8= np.reshape(b,(img16.size[1],img16.size[0]))
-    img8 = Image.fromarray(array8)
-    return img8
-
 #thread for making a cropped version of the big image... not very efficent    
 class ImageCutThread(threading.Thread):
         def __init__(self, queue):
@@ -135,11 +128,9 @@ class MosaicImage():
         self.imageExtents = {imagefile:MetadataHandler.LoadMetadata(imagefile)}
         self.flipVert=flipVert
         self.imagematrix=imagematrix
-
-
         
         #read in the full resolution height/width using PIL
-        image = Image.open(imagefile) #used to have sixteen2eight
+        image = Image.open(imagefile) 
         
         (self.originalwidth,self.originalheight)=image.size
         
@@ -165,8 +156,8 @@ class MosaicImage():
         (matrix_height,matrix_width)=imagematrix.shape
         self.matrix_scale=matrix_width/width_um
 
-        self.matrix_scale = .6 #because I'm not scaling right now?
-##        print "px/Um downsample",self.matrix_scale
+##        self.matrix_scale = .6 #because I'm not scaling right now?
+        print "px/Um downsample",self.matrix_scale
         
         
         
@@ -181,7 +172,7 @@ class MosaicImage():
         
         self.axis.set_title('Mosaic Image')
 
-    def pad(self,mosaic,tile,mosaic_extent,tile_extent):
+    def pad(self,mosaic,tile,mosaic_extent,tile_extent,scaling):
         #takes mosaic and pads based on current extent(in Um) and new extent,
         #returns new mosaic and new extent
 
@@ -213,13 +204,14 @@ class MosaicImage():
         px1,px2 = [i/.6 for i in mosaic_extent],[i/.6 for i in tile_extent]
 
         #Padding
-        size_int = (abs(int(maxx/.6-minx/.6)),abs(int(maxy/.6-miny/.6)))
+        size_int = (abs(int((maxx/.6-minx/.6)*scaling)),abs(int((maxy/.6-miny/.6)*scaling)))
         
         im = Image.new('L',size_int)
-        im.paste(mosaic,(int(abs(px1[1]-maxx/.6)),int(abs(px1[3]-maxy/.6)))) #change this to determine where things are in padding with respect to the axes  
-        im.paste(tile,(abs(int(px2[1]-maxx/.6)),int(abs(px2[3]-maxy/.6))))
+        im.paste(mosaic,(int(abs((px1[1]-maxx/.6)*scaling)),int(abs((px1[3]-maxy/.6)*scaling))))
+        im.paste(tile,(int(abs((px2[1]-maxx/.6)*scaling)),int(abs((px2[3]-maxy/.6)*scaling))))
 
         im.save(os.path.join(os.getcwd(),'mosaic.tif'))
+       
         return im,extent
         
     def extendMosaicTiff(self, mosaic, image_file_name, low_res_image_array, old_extent):
@@ -235,21 +227,34 @@ class MosaicImage():
         self.imageExtents[image_file_name] = tile_extent
         
         #pad low res
-        self.imagematrix,self.extent=self.pad(mosaic,low_res_image_array,old_extent,tile_extent)
+        scaling = .1 #GET THIS FROM SOMEWHERE!!
+        self.imagematrix,self.extent=self.pad(mosaic,low_res_image_array,old_extent,tile_extent,scaling)
+
+        print "img matrix"
+##        self.imagematrix.show()
+        
         self.imagematrix = np.reshape(self.imagematrix.getdata(),(self.imagematrix.size[1],self.imagematrix.size[0]))
+
+##        try:
+##            im = Image.fromarray(self.imagematrix,'L')
+##            im.show()
+##        except:
+##            print "can't show this matrix like this."
+
+
         return self.extent
         
 
     def findTileExtent(self,tile):
         if len(self.imagefiles) == 1:
-            print "len imagefiles = 1"
+##            print "len imagefiles = 1"
             return self.extent
         else:
             return self.imageExtents[tile]        
             
     
     def findHighResImageFile(self,x,y):
-        print "finding high res image file"
+##        print "finding high res image file"
         #assume x and y are stage coordinates (in microns)
         
         for img in self.imagefiles: #eventually turn this into a dict instead of parsing each time
@@ -259,7 +264,7 @@ class MosaicImage():
             
             if x >= tile_extent[0] and x <= tile_extent[1]:
                 if y >= tile_extent[2] and y <= tile_extent[3]:   
-                    print img,"IMG!"
+##                    print img,"IMG!"
                     return img
         print "no high res tile found"        
         return False #did not find HightResImageFile containing x,y coords
@@ -466,7 +471,7 @@ class MosaicImage():
         returns) (x_pix,y_pix) the indices in pixels of that location
         
         """
-        print "convert_pos info TILE,EXTENT",tile,self.extent
+##        print "convert_pos info TILE,EXTENT",tile,self.extent
         extent = self.findTileExtent(tile) if tile else self.extent
         x=x-extent[1] #CHANGED THIS TO FLIP X IN CUTOUTS
         #if self.flipVert:
@@ -498,9 +503,8 @@ class MosaicImage():
         """
         tile = self.findHighResImageFile(x,y)
         print x,y,"xy CUTOUT POS"
-        print tile,"TILE"       
+##        print tile,"TILE"       
         (xpx,ypx)=self.convert_pos_to_orig_ind(x,y,tile)
-##        image=sixteen2eight(Image.open(tile.replace('\\','\\')))
         image = Image.open(tile)
 ##        print xpx,ypx,"XPX,YPX"
         image=image.crop([xpx-window,ypx-window,xpx+window,ypx+window])
