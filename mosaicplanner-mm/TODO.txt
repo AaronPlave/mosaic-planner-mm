@@ -1,18 +1,27 @@
 TODO:
 
-Ranked in order of importance, at least for the first few.
+--------------Ranked in order of importance, at least for the first few---------------
 
 #Test 63x acquisition and write a script to modify the Micro-Manager output to match axiovision metadata output
 
 #Backwards compatibility with original Mosaic Planner
 
-#Allow user to set parameters like focus settings, cross corr coefficient used for good match, number of slices (for determining when to stop), search window size for correllation, maybe number of searches and window sizes?
-
-#Proper closing of mmcore when Mosaic Planner is quit
+#Allow user to set parameters like focus settings, MM-configuration file to load, button for loading MM config?, project name for creating a project folder to store mosaic, CSV, and subfolder containing image folders, cross corr coefficient used for good match, number of slices (for determining when to stop), search window size for correllation, maybe number of searches and window sizes?
 
 #Icons for new functions
 
+#Add Z in PosList
+     -Should I have PosList guess the next Z position or just leave that to autofocus?
+
+
+#Some sort of global "I'M DOING MM PROJECT" flag?
+
+
+
 ------Unordered---------
+
+#Create a settings pickle/txt file so that you don't have to set this stuff each time, maybe load this settings file at beginning or automatically load it from the MM directory?
+
 
 #optimize cross-correlation:
 	  -Threading?
@@ -26,12 +35,16 @@ Ranked in order of importance, at least for the first few.
 
 #Delete an image
 
-#Manually add an image (more than just the first two), could use this after failure if not the end of ribbon
+#Manually (with OR without autofocus) add an image (more than just the first two), could use this after failure if not the end of ribbon
 
 #Have mosaic Planner NOT freeze up during acquisition
 
 #More testing for bugs
+      -bug when choosing a project folder that's already been created, have it check for existence
+      -weird bug when you don't cross_corr in the beginning, but always will cross corr. so..
+      -error when try to take picture at position that already has been taken
 
 #Fix boxes/get rid of them
 
 
+#64 bit compatibility. Derp.
