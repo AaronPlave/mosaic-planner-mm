@@ -36,6 +36,7 @@ import MM_AT  #_MOD #as MM_AT
 import time
 import json
 import img as Acq
+import collections
 import Image #chANGE TO from PIL import Image -for 64 bit sometimes
 
 class MosaicToolbar(NavBarImproved):
@@ -153,7 +154,7 @@ class MosaicToolbar(NavBarImproved):
                                        increment=.1,
                                        digits=2,
                                        name='magnification')    
-		#wx.lib.intctrl.IntCtrl( self, value=63,size=( 30, -1 ) )
+                #wx.lib.intctrl.IntCtrl( self, value=63,size=( 30, -1 ) )
         self.mosaicXCtrl = wx.lib.intctrl.IntCtrl( self, value=1,size=( 20, -1 ) )
         self.mosaicYCtrl = wx.lib.intctrl.IntCtrl( self, value=1,size=( 20, -1 ) )
         self.overlapCtrl = wx.lib.intctrl.IntCtrl( self, value=10,size=( 25, -1 ))
@@ -360,8 +361,17 @@ class MosaicPanel(FigureCanvas):
                         if not evt.key=='shift':
                             self.posList.set_select_all(False)
                         pos.set_selected(True)
-                    elif (mode == 'add'): 
-                        self.posList.add_position(evt.xdata,evt.ydata)               
+                    elif (mode == 'add'):
+                        #CHECK FOR MM PROJECT
+                        if self.Parent.MM_FLAG == True:
+                            print "Initialize Z position as 0 "
+                            self.posList.add_position(
+                                evt.xdata,evt.ydata,
+                                self.mosaicImage.findHighResImageFile(evt.xdata,evt.ydata)[1]) #set tile z
+                            
+                        if self.Parent.MM_FLAG == False:
+                            print "Not adding Z positions"
+                            self.posList.add_position(evt.xdata,evt.ydata)               
                     elif (mode  == 'select' ):
                         self.lasso = MyLasso(evt.inaxes, (evt.xdata, evt.ydata), self.lasso_callback,linecolor='white')
                         self.lassoLock=True                
@@ -461,7 +471,7 @@ class MosaicPanel(FigureCanvas):
                 corrval2=self.CorrTool(window=100,delta=10,skip=1)
                 if (corrval2<.3):
                     badstreak=badstreak+1
-                    #if this fails a second time, lets assume that this point 2 is a messed up one and skip it
+                    #if this fails a second time, lets assumarraye that this point 2 is a messed up one and skip it
                     #we just want to make sure that we don't use it as a point 1 in the future
                     badpositions.append(self.posList.pos2)
             else:
@@ -501,7 +511,7 @@ class MosaicPanel(FigureCanvas):
         
         """
         if (pos.x<self.mosaicImage.extent[0]):
-            return False
+             return False
         if (pos.x>self.mosaicImage.extent[1]):
             return False
         if (pos.y>self.mosaicImage.extent[2]):
@@ -530,9 +540,11 @@ class MosaicPanel(FigureCanvas):
         if corrval>.3:
             return True
         else:
-            return False            
+            return False
+        
     def setImageExtent(self,extent):
         if not self.mosaicImage==None:
+            print extent
             self.mosaicImage.set_extent(extent)
             self.draw()
         
@@ -596,7 +608,7 @@ class MosaicPanel(FigureCanvas):
                 self.posList.shift_selected(dx,dy)
             self.draw()
 
-    def loadImage(self,imagedata,height,width,tif_filename,extent=None,flipVert=False):
+    def loadImage(self,imagedata,height,width,tif_filename,proj_folder=None,extent=None,flipVert=False):
         """load an image, initializing the MosaicImage and redefining the slider such that the far right is the maximum pixel
         
         keywords:
@@ -611,7 +623,11 @@ class MosaicPanel(FigureCanvas):
 ##        print np.array(imagedata,np.dtype('uint16')).shape,(height,width)
         imagematrix=np.reshape(np.array(imagedata,np.dtype('uint16')),(height,width))
 ##        print extent
-        self.mosaicImage=MosaicImage(self.subplot,self.posone_plot,self.postwo_plot,self.corrplot,tif_filename,imagematrix,extent,flipVert=flipVert)
+        try:
+            proj_folder = self.Parent.proj_folder
+        except:
+            proj_folder = None
+        self.mosaicImage=MosaicImage(self.subplot,self.posone_plot,self.postwo_plot,self.corrplot,tif_filename,imagematrix,proj_folder,extent,flipVert=flipVert)
        
         #self.get_toolbar().sliderMinCtrl.SetValue(int(self.mosaicImage.imagematrix.min(axis=None)))
         self.get_toolbar().sliderMaxCtrl.SetValue(int(self.mosaicImage.imagematrix.max(axis=None)))
@@ -634,10 +650,10 @@ class MosaicPanel(FigureCanvas):
         (image,small_height,small_width)=self.Parent.LoadImage(filename,False)
 
         #set extent
-        old_mosaic = self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
+        old_mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'))
         new_extent = self.mosaicImage.extendMosaicTiff(old_mosaic[0],filename,image,old_extent)
 
-        (new_mosaic,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'))
+        (new_mosaic,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'))
         new_mosaic = self.sixteen2eight(new_mosaic)
         
         #update canvas
@@ -649,30 +665,26 @@ class MosaicPanel(FigureCanvas):
     def ButtonLoad(self,evt="None"):
 
         #PUT THIS IN POSLIST LATER
-        self.z_positions = []
+        self.z_positions = collections.OrderedDict()
         
         #grab first image from microscope
         (x,y,z) = MM_AT.getXYZ()
         orig_pos = (x,y,z)
-##        print "POS BEFORE AUTOFOCUS",orig_pos
         MM_AT.setAutoShutter(0)
         MM_AT.setShutter(1)
         MM_AT.setExposure(150)
         (pos,score,im) = Acq.get(orig_pos,True)
-##        print x,"ACQ RESULT"
-##        print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
-##        print pos,"pos from auto"
-##        MM_AT.setShutter(0)
         
         #check if tile folder exists
-        new_tiles = os.path.join(os.getcwd(),'new_tiles')
+        new_tiles = os.path.join(self.Parent.proj_folder,'new_tiles')
         if not os.path.exists(new_tiles):
             os.mkdir('new_tiles')
-            print "making new_tiles dir"
+            print "making new_tiles dir, THIS SHOULDN'T HAPPEN!"
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
-        self.z_positions.append(z)
+        self.z_positions[str((x,y))] = z
+        print self.z_positions
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -690,7 +702,7 @@ class MosaicPanel(FigureCanvas):
         new_meta.close()
 
         #calculate extent ------COULD PROBABLY JUST USE THE IMG FROM MEMORY, OR ELSE CLOSE IT
-        extent = MetadataHandler.LoadMetadata(f_out)
+        extent = MetadataHandler.LoadMetadata(f_out)[0]
         (image,small_height,small_width)=self.Parent.LoadImage(f_out,True) #scaling = yes
         
 
@@ -710,7 +722,7 @@ class MosaicPanel(FigureCanvas):
         
         #draw first image
         print "Loading first image..."
-        self.Parent.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,f_out,flipVert=self.Parent.flipvert.IsChecked())
+        self.Parent.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,f_out,self.Parent.proj_folder,flipVert=self.Parent.flipvert.IsChecked())
         self.Parent.mosaicCanvas.draw()
         self.Parent.mosaicCanvas.setImageExtent(extent)
 
@@ -734,14 +746,14 @@ class MosaicPanel(FigureCanvas):
         MM_AT.setShutter(0)
 
         #check if tile folder self.Parent.mosaicCanvas.setImageExtent(extent)exists
-        new_tiles = os.path.join(os.getcwd(),'new_tiles')
+        new_tiles = os.path.join(self.Parent.proj_folder,'new_tiles')
         if not os.path.exists(new_tiles):
             os.mkdir('new_tiles')
             print "PROBLEM, NOT FINDING new_tiles"
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
-        self.z_positions.append(z)
+        self.z_positions[str((x,y))]=z
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -764,7 +776,7 @@ class MosaicPanel(FigureCanvas):
         extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(first_image)[0],f_out,self.Parent.LoadImage(f_out,True)[0],extent) #scaling only low res param
 
         #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
-        (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'),False) #no scaling here, already scaled        
+        (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False) #no scaling here, already scaled        
         
         self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
         self.Parent.mosaicCanvas.draw()
@@ -780,10 +792,15 @@ class MosaicPanel(FigureCanvas):
         print "delta Z from p1 to p2 = ", p2-p1
 
             
-    def NextImage(self,evt="None"):
-        #calls the real function
+    def NextImage(self,evt="None"): 
+        #calls the real function 
         go = True
+
+        #one way to stop, need a user input for number of slices
         counter = 0
+
+        #another way, stop after each failure or number of consecutive failures? Maybe both since stopping anyways?
+        
         acq_start = time.clock()
         while go:
             print "ROUND " + str(counter+1)
@@ -791,7 +808,8 @@ class MosaicPanel(FigureCanvas):
                 print "reached counter limit"
                 break
             go = self.AcquireNext()
-            self.z_diff(self.z_positions[-2],self.z_positions[-1])
+##            dict_tmp = self.z_positions.copy() #Very roundabout way to store ordered dict pos and get last two entries
+##            self.z_diff(dict_temp.popitem[1],dict_temp.popitem[1])
             counter += 1
         print "Total acq time = ",time.clock()-acq_start
         print "Number of rounds completed = ",counter
@@ -814,9 +832,13 @@ class MosaicPanel(FigureCanvas):
         #image capture, if true then successfully acquired image or found image in mosaic
 
         start_capt = time.clock()
-        img = self.image_capture(x3,y3,z3)
-        self.z_positions.append(z3)
+        new_z = self.image_capture(x3,y3,z3)
+
+        #Have to append z3 to current position in PosList
+##        self.z_positions.append(new_z)
+##        self.posList.pos2.z = new_z
         print self.z_positions,"Zzzzs"
+        print self.posList.pos2.x,self.posList.pos2.y,self.posList.pos2.z,"!@#$%"
         print "image_capture time = ",time.clock()-start_capt
 
         start_corr = time.clock()
@@ -876,7 +898,7 @@ class MosaicPanel(FigureCanvas):
         if check:
             print "point already in mosaic"
             #down to cross corr
-            return True
+            return check[1] #Z position of tile
 
         else:
 ##            try:
@@ -891,6 +913,7 @@ class MosaicPanel(FigureCanvas):
             MM_AT.setAutoShutter(0)
             MM_AT.setShutter(1)
             (pos,score,im) = Acq.get(orig_pos,True)
+            
             print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
             print pos,"pos from auto"
             MM_AT.setShutter(0)
@@ -898,7 +921,7 @@ class MosaicPanel(FigureCanvas):
             #create new dir for image, save im
             (x,y,z) = MM_AT.getXYZ()
             str_xyz = str((x,y,z))
-            new_tiles = os.path.join(os.getcwd(),'new_tiles')
+            new_tiles = os.path.join(self.Parent.proj_folder,'new_tiles')
             newdir = os.path.join(new_tiles,str_xyz)
             os.mkdir(newdir)
             f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
@@ -917,22 +940,24 @@ class MosaicPanel(FigureCanvas):
             #calculating new extent and padding
             extent = self.mosaicImage.extent
 
-            mosaic = self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'),False)[0]
+            mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)[0]
             
             extent2 = self.mosaicImage.extendMosaicTiff(mosaic,f_out,self.Parent.LoadImage(f_out,True)[0],extent)
             
             #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
-            (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(os.getcwd(),'mosaic.tif'),False)
+            (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)
 
             self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
             self.Parent.mosaicCanvas.draw()
             self.Parent.mosaicCanvas.setImageExtent(extent2)
 
-            return True
+
+            print "THIS IS POSITION Z",pos[2]
+            return pos[2]
         
-##	    except:
-##		print "Unable to grab and process next image"
-##		return False
+##          except:
+##              print "Unable to grab and process next image"
+##              return False
 ##    
     def cross_corr(self,window=100):
         """
@@ -988,6 +1013,9 @@ class ZVISelectFrame(wx.Frame):
         #default metadata info and image file, remove for release
         default_meta=""
         default_image=""
+        default_proj=os.getcwd()
+        self.MM_FLAG = False
+        print "default proj dir",default_proj
         
         #recursively call old init function
         wx.Frame.__init__(self, parent, title=title, size=(1400,885),pos=(5,5))
@@ -1056,11 +1084,20 @@ class ZVISelectFrame(wx.Frame):
         style=wx.FLP_USE_TEXTCTRL, size=wx.Size(300,100),wildcard='*.tif')
         self.image_filepicker.SetPath(default_image)
         self.image_load_button=wx.Button(self,id=wx.ID_ANY,label="Load",name="image load")
-        
+
+        #define project folder for Micro-Manager project type
+        self.proj_label=wx.StaticText(self,id=wx.ID_ANY,label="MM project folder")
+        self.proj_folderpicker=wx.DirPickerCtrl(self,
+            message='Select a project folder for your MM project',\
+            path=default_proj,name='projectFolderPickerCtrl1',
+            style=wx.FLP_USE_TEXTCTRL,size=wx.Size(300,100))
+        self.proj_folderpicker.SetPath(default_proj)
+        self.folder_create_button=wx.Button(self,id=wx.ID_ANY,label="Create",name="folder create")
        
         #wire up the button to the "OnLoad" button
         self.Bind(wx.EVT_BUTTON, self.OnImageLoad,self.image_load_button)
         self.Bind(wx.EVT_BUTTON, self.OnMetaLoad,self.meta_load_button)
+        self.Bind(wx.EVT_BUTTON, self.OnProjCreate,self.folder_create_button)
         self.Bind(wx.EVT_BUTTON, self.OnEditImageMetadata,self.meta_enter_button)
         
        
@@ -1071,7 +1108,7 @@ class ZVISelectFrame(wx.Frame):
         style=wx.FLP_USE_TEXTCTRL, size=wx.Size(300,100),wildcard='*.csv')
         self.array_load_button=wx.Button(self,id=wx.ID_ANY,label="Load",name="load button")
         self.array_formatBox=wx.ComboBox(self,id=wx.ID_ANY,value='AxioVision',\
-        size=wx.DefaultSize,choices=['AxioVision','SmartSEM','OMX'], name='File Format For Position List')
+        size=wx.DefaultSize,choices=['AxioVision','SmartSEM','OMX','MM'], name='File Format For Position List')
         self.array_formatBox.SetEditable(False)
         self.array_save_button=wx.Button(self,id=wx.ID_ANY,label="Save",name="save button")
         self.array_saveframes_button=wx.Button(self,id=wx.ID_ANY,label="Save Frames",name="save-frames button")
@@ -1095,6 +1132,12 @@ class ZVISelectFrame(wx.Frame):
         self.image_filepickersizer.Add(self.image_label,0,wx.EXPAND)
         self.image_filepickersizer.Add(self.image_filepicker,1,wx.EXPAND)        
         self.image_filepickersizer.Add(self.image_load_button,0,wx.EXPAND)
+
+        #define a horizontal sizer for them and place the folder picker components in there
+        self.proj_folderpickersizer=wx.BoxSizer(wx.HORIZONTAL)
+        self.proj_folderpickersizer.Add(self.proj_label,0,wx.EXPAND)
+        self.proj_folderpickersizer.Add(self.proj_folderpicker,1,wx.EXPAND)        
+        self.proj_folderpickersizer.Add(self.folder_create_button,0,wx.EXPAND)
         
         #define a horizontal sizer for them and place the file picker components in there
         self.array_filepickersizer=wx.BoxSizer(wx.HORIZONTAL)
@@ -1110,6 +1153,7 @@ class ZVISelectFrame(wx.Frame):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         #place the filepickersizer into the vertical arrangement
         self.sizer.Add(self.image_filepickersizer,0,wx.EXPAND)
+        self.sizer.Add(self.proj_folderpickersizer,0,wx.EXPAND)
         self.sizer.Add(self.meta_filepickersizer,0,wx.EXPAND)
         self.sizer.Add(self.array_filepickersizer,0,wx.EXPAND)
         self.sizer.Add(self.mosaicCanvas.get_toolbar(), 0, wx.LEFT | wx.EXPAND)
@@ -1143,6 +1187,8 @@ class ZVISelectFrame(wx.Frame):
         elif self.array_formatBox.GetValue()=='SmartSEM':
             SEMsetting=self.mosaicCanvas.posList.add_from_file_SmartSEM(self.array_filepicker.GetPath())
             self.SmartSEMSettings=SEMsetting
+        elif self.array_formatBox.GetValue()=='MM':
+            print "not implemented yet"
         self.mosaicCanvas.draw()
             
     def OnArraySave(self,event):
@@ -1161,7 +1207,12 @@ class ZVISelectFrame(wx.Frame):
             if self.save_transformed.IsChecked():
                 self.mosaicCanvas.posList.save_position_list_SmartSEM(self.array_filepicker.GetPath(),SEMS=self.SmartSEMSettings,trans=self.Transform)    
             else:
-                self.mosaicCanvas.posList.save_position_list_SmartSEM(self.array_filepicker.GetPath(),SEMS=self.SmartSEMSettings,trans=None)        
+                self.mosaicCanvas.posList.save_position_list_SmartSEM(self.array_filepicker.GetPath(),SEMS=self.SmartSEMSettings,trans=None)
+        elif self.array_formatBox.GetValue()=='MM':
+            if self.save_transformed.IsChecked():
+                self.mosaicCanvas.posList.save_position_list_MM(self.array_filepicker.GetPath()) #add transform support here later, update save pos function
+            else:
+                self.mosaicCanvas.posList.save_position_list_MM(self.array_filepicker.GetPath())
               
     def OnArraySaveFrames(self,event):   
         if self.array_formatBox.GetValue()=='AxioVision':
@@ -1332,18 +1383,37 @@ class ZVISelectFrame(wx.Frame):
             extent=self.LoadZVIMetaData(self.meta_filepicker.GetPath())
         if self.meta_formatBox.GetValue()=='ZeissXML':
             extent=self.LoadAxioVisionXMLMetaData(self.meta_filepicker.GetPath())
-        self.mosaicCanvas.setImageExtent(extent)
+        self.mosaic = TrueCanvas.setImageExtent(extent)
                  
     def OnImageLoad(self,event="none"):
         """event handler for handling the Load button press"""
         #extent=self.LoadZVIMetaData(self.meta_filepicker.GetPath())
         filename=self.image_filepicker.GetPath()
         (image,small_height,small_width)=self.LoadImage(filename)
-        self.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,filename,flipVert=self.flipvert.IsChecked())
+        try:
+            proj_folder = self.Parent.proj_folder
+        except:
+            proj_folder = None
+        self.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,filename,proj_folder,flipVert=self.flipvert.IsChecked())
         self.mosaicCanvas.draw()
         self.meta_filepicker.SetPath(filename + "_meta.xml");
         self.array_filepicker.SetPath(os.path.splitext(self.meta_filepicker.GetPath())[0]+".tif-array.csv")
- 
+
+    def OnProjCreate(self,event="none"):
+        """
+        event handler for handling the Create button press. Creates subfolder called
+        new_tiles where acquired images will be stored
+        """
+        self.proj_folder = self.proj_folderpicker.GetPath()
+        if not os.path.exists(os.path.join(self.proj_folder,'new_tiles')):
+            print "creating project folder"
+            os.mkdir(os.path.join(self.proj_folder,'new_tiles'))
+        else:
+            print "folder already exists, can implement projecy loading here, but for now just sets dir?"
+
+        #Toggle global MM_FLAG on, signals that and MM project is being worked on
+        self.MM_FLAG = True
+             
     def ToggleRelativeMotion(self,event):
         """event handler for handling the toggling of the relative motion"""  
         if self.relative_motion.IsChecked():
@@ -1416,3 +1486,5 @@ frame = ZVISelectFrame(None,"Mosaic Planner")
 
 # A Frame is a top-level window.
 app.MainLoop()
+MM_AT.unload_devices()
+print "Unloaded all devices"

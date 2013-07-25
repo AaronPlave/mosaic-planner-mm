@@ -65,7 +65,8 @@ def setAutoShutter(arg):
 def setShutter(arg):
      mmc.setShutterOpen(arg)
 
-
+def unload_devices():
+     mmc.unloadAllDevices()
 
 
 #set filter, shutter,etc. = mmc.setState("F1",3) or

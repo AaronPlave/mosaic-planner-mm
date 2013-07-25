@@ -28,6 +28,8 @@ from matplotlib.lines import Line2D
 from matplotlib.nxutils import points_inside_poly
 from CenterRectangle import CenterRectangle
 from Transform import Transform
+import json
+from copy import deepcopy
      
 class posList():
     """class for holding, altering, and plotting the position list"""
@@ -118,9 +120,16 @@ class posList():
         else:
             dx=self.pos2.x-self.pos1.x
             dy=self.pos2.y-self.pos1.y
+            
             #add the new position using the add_position function
-            newpos=self.add_position(self.pos2.x+dx,self.pos2.y+dy)
-            #redefine pos1 and pos2 such that the new point is pos2 and the old pos2 is pos1
+            try: #not so clean way to check for MM project y pos..
+                print "trying this"
+                newpos=self.add_position(self.pos2.x+dx,self.pos2.y+dy,self.pos2.y)
+                print "worked here"
+            except:
+                newpos=self.add_position(self.pos2.x+dx,self.pos2.y+dy)
+
+                #redefine pos1 and pos2 such that the new point is pos2 and the old pos2 is pos1
             oldpos2=self.pos2
             self.set_pos2(newpos)
             self.set_pos1(oldpos2)
@@ -286,7 +295,7 @@ class posList():
         #most points of streaks of selection to use the slope the left
         #this won't be possible for singulatons, but who cares
         
-        #conver the true/false into 1.0/0.0 binary
+        #convert the true/false into 1.0/0.0 binary
         #binary=self.selected*1.0
         #the ones to fix are located at the downticks of the diff
         badones,=np.where(np.diff(select)==-1)
@@ -320,7 +329,7 @@ class posList():
                 select.append(0.0)          
         return (np.array(xpos),np.array(ypos),np.array(select))                 
               
-    def add_position(self,x,y,edgecolor='g',withpoint=True):
+    def add_position(self,x,y,z=False,edgecolor='g',withpoint=True):
         """add a new position to the position list
         
         keywords:
@@ -331,7 +340,12 @@ class posList():
 
         
         """
-        newPosition=slicePosition(axis=self.axis,pos_list=self,x=x,y=y,edgecolor=edgecolor,withpoint=withpoint,showNumber=self.shownumbers)
+        if z:
+            newPosition=slicePosition(axis=self.axis,pos_list=self,x=x,y=y,z=z,edgecolor=edgecolor,withpoint=withpoint,showNumber=self.shownumbers)
+            print "did this in add pos"
+        else:
+            newPosition=slicePosition(axis=self.axis,pos_list=self,x=x,y=y,edgecolor=edgecolor,withpoint=withpoint,showNumber=self.shownumbers)
+            print "did NOT make slice pos with add_pos"
         self.slicePositions.append(newPosition)  
         self.__sort_points()
         self.updateNumbers()
@@ -466,6 +480,33 @@ class posList():
                 (xt,yt)=trans.transform(pos.x,pos.y)
                 writer.writerow(['%03d: %f'%(index,xt),yt,Z])  
                 
+
+    def save_position_list_MM(self,filename,z_list=None):
+        self.__sort_points()
+        for i in self.slicePositions: print i.x,i.y,i.z
+        base = {"VERSION":3,"ID":"Micro-Manager XY-position list", "POSITIONS": []}
+        pos_template = {'GRID_ROW': 0, 'GRID_COL': 0, 'DEFAULT_Z_STAGE': 'ZeissFocusAxis',
+                        'DEVICES': [{'DEVICE': 'ZeissXYStage', 'Y': 0, 'Z': 0,'AXES': 2, 'X': 0},
+                                    {'DEVICE': 'ZeissFocusAxis','Y': 0, 'Z': 0, 'AXES': 1,'X': 0}],
+                        'LABEL': '1-Pos_000_000',
+                        'DEFAULT_XY_STAGE': 'ZeissXYStage',
+                        'PROPERTIES': {'OverlapUm': '0.0000', 'OverlapPixels': '0'}}
+        
+        positions = []
+        for i in self.slicePositions:
+            cp = deepcopy(pos_template)
+            cp['DEVICES'][0]['X'] = i.x
+            cp['DEVICES'][0]['Y'] = i.y
+            cp['DEVICES'][1]['X'] = i.z
+            positions.append(cp)
+            cp = ""
+
+        base['POSITIONS'] = positions
+        
+        f_out = open(filename,'wb')
+        f_out.write(json.dumps(base))
+        f_out.close()
+
     def save_frame_list_OMX(self,filename,trans=None,Z=13235.0):
         """save the positionlist to a SmartSEM position list csv format, where each frame of the mosaic is its own position
         keywords:
@@ -545,16 +586,20 @@ class posList():
     def __sort_points(self,vertsort=False):
         """sort the slicePositions in the list according to their x value"""
         if self.dosort:
-			if vertsort:
-				self.slicePositions.sort(key=lambda pos: pos.y, reverse=False)  
-			else:
-				self.slicePositions.sort(key=lambda pos: pos.x, reverse=False)  
+            if vertsort:
+                self.slicePositions.sort(key=lambda pos: pos.y, reverse=False)  
+            else:
+                self.slicePositions.sort(key=lambda pos: pos.x, reverse=False)  
             
     def updateNumbers(self):
         for index,pos in enumerate(self.slicePositions):
             pos.setNumber(index)
             
     def setNumberVisibility(self,isvisible):
+        if vertsort:
+            self.slicePositions.sort(key=lambda pos: pos.y, reverse=False)  
+        else:
+            self.slicePositions.sort(key=lambda pos: pos.x, reverse=False)  
         self.shownumbers=isvisible
         for index,pos in enumerate(self.slicePositions):
             pos.set_number_visible(isvisible)
@@ -594,7 +639,7 @@ class posList():
 class slicePosition():
     """class which contains information about a single position in the position list, and is responsible for keeping 
     its matplotlib representation up to date via function calls which are mostly managed by its posList"""
-    def __init__(self,axis,pos_list,x,y,withpoint=True,selected=False,edgecolor='g',number=-1,showNumber=False): 
+    def __init__(self,axis,pos_list,x,y,z=False,withpoint=True,selected=False,edgecolor='g',number=-1,showNumber=False): 
         """constructor function
         
         keywords:
@@ -610,7 +655,15 @@ class slicePosition():
         self.axis=axis
         self.pos_list=pos_list
         self.x=x
-        self.y=y 
+        self.y=y
+
+        #Added Z position
+        if z:
+            print "init sclice with z"
+            self.z=z
+            print self.z
+        if not z:
+            print "NO Z"
         self.selected=selected
         self.withpoint=withpoint
         self.number = number
@@ -699,7 +752,7 @@ class slicePosition():
             #cent_line_rot=UL.rotate_around(Point(self.x,self.y),self.angle)
             frame1=cent_line_shift+Point(-.5*(self.pos_list.mosaic_settings.mx-1)*fw*(1-alpha),0);
             #frame1=UL
-			#frame1=self.__shiftdown_andslide_first(ULr,fh/2,self.angle,0)
+            #frame1=self.__shiftdown_andslide_first(ULr,fh/2,self.angle,0)
             
             # self.frameList.add_position(frame1.x,frame1.y,withpoint=False,edgecolor='c')
             for y in range(self.pos_list.mosaic_settings.my):
@@ -885,9 +938,15 @@ class slicePosition():
         dy=y-self.y
         self.shiftPosition(dx, dy)
         
-    def getPosition(self):
-        return (self.x,self.y)
-      
+    def getPosition(self,z_flag=False):
+        #set z_flag=True to return Z pos
+        print self.z
+        if z_flag == True:
+            print "returning z",self.z,"huh"
+            return (self.x,self.y,self.z)
+        else:
+            print "No z"
+            return (self.x,self.y)
     def updateMosaicSettings(self):
         """update the matplotlib representation of this point's mosaic"""
         if not self.axis: return None

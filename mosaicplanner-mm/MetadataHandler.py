@@ -69,6 +69,7 @@ def LoadMMMetaData(filename):
             tiles.append(i)
     xpos = f[tiles[0]]["XPositionUm"]
     ypos = f[tiles[0]]["YPositionUm"]
+    zpos = f[tiles[0]]["ZPositionUm"] 
     ScaleFactorX= f["Summary"]["PixelSize_um"]
     ScaleFactorY= ScaleFactorX
     Width=f["Summary"]["Width"]
@@ -78,7 +79,7 @@ def LoadMMMetaData(filename):
 
         #WHY WAS IT + THEN - FOR Y??
 ##    print extent, "HERE"
-    return extent
+    return extent,zpos
     
 def LoadZVIMetaData(filename):
     """function for loading metadata using the OLE zvi reader I developed

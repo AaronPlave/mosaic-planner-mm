@@ -102,7 +102,7 @@ class ImageCutThread(threading.Thread):
 class MosaicImage():
     """A class for storing the a large mosaic image in a matplotlib axis. Also contains functions for finding corresponding points
     in the larger mosaic image, and plotting informative graphs about that process in different axis"""
-    def __init__(self,axis,one_axis,two_axis,corr_axis,imagefile,imagematrix,extent=None,flipVert=False):
+    def __init__(self,axis,one_axis,two_axis,corr_axis,imagefile,imagematrix,proj_folder=None,extent=None,flipVert=False):
         """initialization function which will plot the imagematrix passed in and set the bounds according the bounds specified by extent
         
         keywords)
@@ -125,9 +125,12 @@ class MosaicImage():
         self.corr_axis=corr_axis
         self.imagefile=imagefile
         self.imagefiles = [imagefile] #need to somehow load more images into this, assume they get added
-        self.imageExtents = {imagefile:MetadataHandler.LoadMetadata(imagefile)}
+        self.imageExtents = {imagefile:MetadataHandler.LoadMetadata(imagefile)[0]}
         self.flipVert=flipVert
         self.imagematrix=imagematrix
+
+        if proj_folder:
+            self.proj_folder=proj_folder
         
         #read in the full resolution height/width using PIL
         image = Image.open(imagefile) 
@@ -157,7 +160,7 @@ class MosaicImage():
         self.matrix_scale=matrix_width/width_um
 
 ##        self.matrix_scale = .6 #because I'm not scaling right now?
-        print "px/Um downsample",self.matrix_scale
+##        print "px/Um downsample",self.matrix_scale
         
         
         
@@ -210,7 +213,7 @@ class MosaicImage():
         im.paste(mosaic,(int(abs((px1[1]-maxx/.6)*scaling)),int(abs((px1[3]-maxy/.6)*scaling))))
         im.paste(tile,(int(abs((px2[1]-maxx/.6)*scaling)),int(abs((px2[3]-maxy/.6)*scaling))))
 
-        im.save(os.path.join(os.getcwd(),'mosaic.tif'))
+        im.save(os.path.join(self.proj_folder,'mosaic.tif'))
        
         return im,extent
         
@@ -221,7 +224,7 @@ class MosaicImage():
 ##        print self.imagefiles,"IMAGEFILES"
         
         #grab image metadata
-        tile_extent = MetadataHandler.LoadMetadata(image_file_name)        
+        tile_extent = MetadataHandler.LoadMetadata(image_file_name)[0]        
 
         #add image extent to imageExtents dict
         self.imageExtents[image_file_name] = tile_extent
@@ -230,7 +233,7 @@ class MosaicImage():
         scaling = .1 #GET THIS FROM SOMEWHERE!!
         self.imagematrix,self.extent=self.pad(mosaic,low_res_image_array,old_extent,tile_extent,scaling)
 
-        print "img matrix"
+##        print "img matrix"
 ##        self.imagematrix.show()
         
         self.imagematrix = np.reshape(self.imagematrix.getdata(),(self.imagematrix.size[1],self.imagematrix.size[0]))
@@ -260,12 +263,12 @@ class MosaicImage():
         for img in self.imagefiles: #eventually turn this into a dict instead of parsing each time
             #grab metadata
             
-            tile_extent = MetadataHandler.LoadMetadata(img)
+            (tile_extent,zpos) = MetadataHandler.LoadMetadata(img)
             
             if x >= tile_extent[0] and x <= tile_extent[1]:
                 if y >= tile_extent[2] and y <= tile_extent[3]:   
 ##                    print img,"IMG!"
-                    return img
+                    return img,zpos
         print "no high res tile found"        
         return False #did not find HightResImageFile containing x,y coords
 
@@ -276,11 +279,11 @@ class MosaicImage():
         #height_um=self.extent[2]-self.extent[3]
         
         #calculate the pixels/micron of full resolution picture
-##        self.orig_um_per_pix=width_um/self.originalwidth    
+##        self.orig_um_per_pix=width_um/self.originalwidth
+        
         #calculate the pixels/micron of the downsampled matrix 
         (matrix_height,matrix_width)=self.imagematrix.shape
         self.matrix_scale=matrix_width/width_um
-##        print self.extent,"Eeee"
         self.Image.set_extent((self.extent[1],self.extent[0],self.extent[2],self.extent[3]))
         self.axis.set_xlim(self.extent[1],self.extent[0]) #changed from 0,1 to 1,0 on 7_22_13 to try to flip x-axis without reversing images
         if self.flipVert:
@@ -333,7 +336,6 @@ class MosaicImage():
         dh=dh*scale;
         dw=dw*scale;
         if self.flipVert:
-            print "flipVERT?!?!?!"
             ext=[xc-dw,xc+dw,yc+dh,yc-dh] #would have to flip it here too
         else:
             ext=[xc+dw,xc-dw,yc-dh,yc+dh] #flipped x here
@@ -462,7 +464,7 @@ class MosaicImage():
         self.corrImage.set_clim(0,.5)
 
     def convert_pos_to_orig_ind(self,x,y,tile=None):
-        """converts a position in original units (usually microns) to indices in the original full resolution image
+        """converts a positionin original units (usually microns) to indices in the original full resolution image
         
         keywords)
         x)x position in microns
@@ -501,8 +503,8 @@ class MosaicImage():
         returns) cut: a 2d numpy matrix containing the removed patch
         
         """
-        tile = self.findHighResImageFile(x,y)
-        print x,y,"xy CUTOUT POS"
+        tile = self.findHighResImageFile(x,y)[0]
+##        print x,y,"xy CUTOUT POS"
 ##        print tile,"TILE"       
         (xpx,ypx)=self.convert_pos_to_orig_ind(x,y,tile)
         image = Image.open(tile)

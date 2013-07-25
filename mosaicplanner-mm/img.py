@@ -31,7 +31,7 @@ def get(pos,auto=False): #hmm, have get calling auto and auto calling get. bad.
     if curr != (pos[0],pos[1]):
         wait_XYstage()
     if auto:
-        z = autofocus(pos,4,10,2)
+        z = autofocus(pos,4,5,2)
         setZ(z[0][2])
         wait_Zstage()
         return z
