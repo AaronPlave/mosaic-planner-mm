@@ -4,23 +4,30 @@ TODO:
 
 #Test 63x acquisition and write a script to modify the Micro-Manager output to match axiovision metadata output
 
-#Backwards compatibility with original Mosaic Planner
 
-#Allow user to set parameters like focus settings, MM-configuration file to load, button for loading MM config?, project name for creating a project folder to store mosaic, CSV, and subfolder containing image folders, cross corr coefficient used for good match, number of slices (for determining when to stop), search window size for correllation, maybe number of searches and window sizes?
+++#Allow user to set parameters like focus settings, MM-configuration file to load, button for loading MM config?, project name for creating a project folder to store mosaic, CSV, and subfolder containing image folders, cross corr coefficient used for good match, number of slices (for determining when to stop), search window size for correllation, maybe number of searches and window sizes?
 
 #Icons for new functions
 
-#Add Z in PosList
+++#Add Z in PosList
      -Should I have PosList guess the next Z position or just leave that to autofocus?
 
 
-#Some sort of global "I'M DOING MM PROJECT" flag?
+++#Some sort of global "I'M DOING MM PROJECT" flag?
+      -Done, MM_FLAG, can use for other things if necessary
 
+#README
+	-mention that position list is saved in current MM format, may have to update this if mM changes
 
+#DOCSTRINGS!!!!!!!
+
+#FIX mosiacPlanner pixel size grab from metadata
 
 ------Unordered---------
 
 #Create a settings pickle/txt file so that you don't have to set this stuff each time, maybe load this settings file at beginning or automatically load it from the MM directory?
+
+# Z Range for autofocus/test autofocus more
 
 
 #optimize cross-correlation:
@@ -48,3 +55,7 @@ TODO:
 
 
 #64 bit compatibility. Derp.
+
+#Backwards compatibility
+
+#microscope stage coords resetting each time...
