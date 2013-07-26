@@ -24,7 +24,7 @@ import OleFileIO_PL,os
 import Image
 import wx.lib.intctrl
 import numpy as np
-from Settings import MosaicSettings, CameraSettings, ChangeCameraSettings, ImageSettings, ChangeImageMetadata, SmartSEMSettings, ChangeSEMSettings
+from Settings import MosaicSettings, CameraSettings, ChangeCameraSettings, ImageSettings, ChangeImageMetadata, SmartSEMSettings, ChangeSEMSettings,MMSettings,ChangeMMSettings
 from PositionList import posList
 from MyLasso import MyLasso
 from MosaicImage import MosaicImage
@@ -37,6 +37,7 @@ import time
 import json
 import img as Acq
 import collections
+import sys
 import Image #chANGE TO from PIL import Image -for 64 bit sometimes
 
 class MosaicToolbar(NavBarImproved):
@@ -651,7 +652,7 @@ class MosaicPanel(FigureCanvas):
 
         #set extent
         old_mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'))
-        new_extent = self.mosaicImage.extendMosaicTiff(old_mosaic[0],filename,image,old_extent)
+        new_extent = self.mosaicImage.extendMosaicTiff(old_mosaic[0],filename,image,old_extent,self.Parent.scaling)
 
         (new_mosaic,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'))
         new_mosaic = self.sixteen2eight(new_mosaic)
@@ -668,12 +669,13 @@ class MosaicPanel(FigureCanvas):
         self.z_positions = collections.OrderedDict()
         
         #grab first image from microscope
+        (steps,rough_size,fine_size) = self.Parent.focus_params
         (x,y,z) = MM_AT.getXYZ()
         orig_pos = (x,y,z)
         MM_AT.setAutoShutter(0)
         MM_AT.setShutter(1)
-        MM_AT.setExposure(150)
-        (pos,score,im) = Acq.get(orig_pos,True)
+        MM_AT.setExposure(self.Parent.exposure)
+        (pos,score,im) = Acq.get(orig_pos,True,steps,rough_size,fine_size)
         
         #check if tile folder exists
         new_tiles = os.path.join(self.Parent.proj_folder,'new_tiles')
@@ -734,15 +736,13 @@ class MosaicPanel(FigureCanvas):
         """After first image is manually grabbed, use this function to grab the second image"""
         
         #grab second image from microscope
+        (steps,rough_size,fine_size) = self.Parent.focus_params
         (x,y,z) = MM_AT.getXYZ()
         orig_pos = (x,y,z)
-##        print "POS BEFORE AUTOFOCUS",orig_pos
-        MM_AT.setAutoShutter(0)
+        MM_AT.setExposure(self.Parent.exposure)
         MM_AT.setShutter(1)
-        (pos,score,im) = Acq.get(orig_pos,True)
-##        print x,"ACQ RESULT"
-##        print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
-##        print pos,"pos from auto"
+        MM_AT.setAutoShutter(0)
+        (pos,score,im) = Acq.get(orig_pos,True,steps,rough_size,fine_size)
         MM_AT.setShutter(0)
 
         #check if tile folder self.Parent.mosaicCanvas.setImageExtent(extent)exists
@@ -773,7 +773,7 @@ class MosaicPanel(FigureCanvas):
         #calculating new extent and padding
         first_image = self.mosaicImage.imagefiles[0]
         extent = self.mosaicImage.imageExtents[first_image] #a not so clean way to grab the first image extent
-        extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(first_image)[0],f_out,self.Parent.LoadImage(f_out,True)[0],extent) #scaling only low res param
+        extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(first_image)[0],f_out,self.Parent.LoadImage(f_out,True)[0],extent,self.Parent.scaling) #scaling only low res param
 
         #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
         (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False) #no scaling here, already scaled        
@@ -802,11 +802,18 @@ class MosaicPanel(FigureCanvas):
         #another way, stop after each failure or number of consecutive failures? Maybe both since stopping anyways?
         
         acq_start = time.clock()
+
+        #If user specified num_slices, use that, else no stop (default value = 0)
+        stop = self.Parent.num_slices
+        print "STOP = ",stop
+
+        #Acquire               
         while go:
             print "ROUND " + str(counter+1)
-            if counter == 25:
-                print "reached counter limit"
-                break
+            if stop != 0:
+                if counter == stop:
+                    print "reached num_slices limit, stopping."
+                    break
             go = self.AcquireNext()
 ##            dict_tmp = self.z_positions.copy() #Very roundabout way to store ordered dict pos and get last two entries
 ##            self.z_diff(dict_temp.popitem[1],dict_temp.popitem[1])
@@ -842,7 +849,7 @@ class MosaicPanel(FigureCanvas):
         print "image_capture time = ",time.clock()-start_capt
 
         start_corr = time.clock()
-        corr = self.cross_corr()
+        corr = self.cross_corr(window=self.Parent.win1)
         print "corr time = ",time.clock()-start_corr
     
   #################### ends here for now ############
@@ -854,41 +861,43 @@ class MosaicPanel(FigureCanvas):
         
         #if bad match AFTER extended window size correlation
         else:
-            start_corr300 = time.clock() 
-            corr = self.cross_corr(window=300) #how much window expansion here?
-            print "corr 300 time = ", time.clock()-start_corr300
-            if corr:
-                print "good match with window=300"
-                return True
+            if self.Parent.num_searches > 1:
+                start_corr300 = time.clock() 
+                corr = self.cross_corr(self.Parent.win2) #how much window expansion here?
+                print "corr 300 time = ", time.clock()-start_corr300
+                if corr:
+                    print "good match with window=300"
+                    return True
 
-            start_corr600 = time.clock()
-            corr = self.cross_corr(window=600)
-            print "corr 600 time = ",time.clock()-start_corr600
-            if corr:
-                print "good match with windpow=600" 
-                return True
-            else:
-                print "no boxes for you. boxes bad."
-                return
-                #FOR NOW
-                print "going to boxes"
-                    
-                box = self.surrounding_box() #autofocus on boxes? no for now.
-                z = MM_AT.getXYZ()[2]
-                for point in box:
-                    print point,point[0],point[1],"POINTS FROM BOX"
-                    img = self.image_capture(point[0],point[1],z)
-                    corr = self.cross_corr(window=600)
-                    if corr > .3:
-                        print "found it here",
+                if self.Parent.num_searches > 2:
+                    start_corr600 = time.clock()
+                    corr = self.cross_corr(self.Parent.win3)
+                    print "corr 600 time = ",time.clock()-start_corr600
+                    if corr:
+                        print "good match with windpow=600" 
                         return True
-                    #could remove the tile here if it's not good, but eh.
-                    else: #probably should tell it to cross corr towards the middle box or else this is fairly usless..
-                        print "no match, trying next tile in box"
-                #fail condition, what to do here?
-                print "no successful matches, game over, more testing required, your castle was overrun, go home, you lose, sciencefail."
-                return False
-           
+                    else:
+                        print "Acquisition could not find the next tile, either complete or lost."
+                        return
+                        #ENABLE THIS IF YOU WANT SURROUNDING BOXES BY REMOVING THE RETURN.
+                        print "going to boxes"
+                            
+                        box = self.surrounding_box() #autofocus on boxes? no for now.
+                        z = MM_AT.getXYZ()[2]
+                        for point in box:
+                            print point,point[0],point[1],"POINTS FROM BOX"
+                            img = self.image_capture(point[0],point[1],z)
+                            corr = self.cross_corr(window=600)
+                            if corr > .3:
+                                print "found it here",
+                                return True
+                            #could remove the tile here if it's not good, but eh.
+                            else: #probably should tell it to cross corr towards the middle box or else this is fairly usless..
+                                print "no match, trying next tile in box"
+                        #fail condition, what to do here?
+                        print "no successful matches, game over, more testing required, your castle was overrun, go home, you lose, sciencefail."
+                        return False
+               
  
     def image_capture(self,x3,y3,z3):
         
@@ -901,8 +910,8 @@ class MosaicPanel(FigureCanvas):
             return check[1] #Z position of tile
 
         else:
-##            try:
             #grab next image from microscope
+            MM_AT.setExposure(self.Parent.exposure)
             MM_AT.setXY(x3,y3)
             Acq.wait_XYstage() #for now these are fixed at time.sleep(.2) since it's been tricky to get the communication checks working
             MM_AT.setZ(z3)
@@ -912,7 +921,11 @@ class MosaicPanel(FigureCanvas):
             print "POS BEFORE AUTOFOCUS",MM_AT.getXYZ()
             MM_AT.setAutoShutter(0)
             MM_AT.setShutter(1)
-            (pos,score,im) = Acq.get(orig_pos,True)
+                
+            (num_steps,rough_size,fine_size) = self.Parent.focus_params
+            print num_steps,rough_size,fine_size,"FOCUS PARAMS"
+            #Acquire image
+            (pos,score,im) = Acq.get(orig_pos,True,num_steps,rough_size,fine_size)
             
             print MM_AT.getXYZ(),"POS AFTER AUTOFOCUS"
             print pos,"pos from auto"
@@ -942,7 +955,7 @@ class MosaicPanel(FigureCanvas):
 
             mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)[0]
             
-            extent2 = self.mosaicImage.extendMosaicTiff(mosaic,f_out,self.Parent.LoadImage(f_out,True)[0],extent)
+            extent2 = self.mosaicImage.extendMosaicTiff(mosaic,f_out,self.Parent.LoadImage(f_out,True)[0],extent,self.Parent.scaling)
             
             #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
             (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)
@@ -996,6 +1009,7 @@ class ZVISelectFrame(wx.Frame):
     ID_RELATIVEMOTION = wx.NewId()
     ID_EDIT_CAMERA_SETTINGS = wx.NewId()
     ID_EDIT_SMARTSEM_SETTINGS = wx.NewId()
+    ID_EDIT_MM_SETTINGS = wx.NewId()
     ID_SORTPOINTS = wx.NewId()
     ID_SHOWNUMBERS = wx.NewId()
     ID_SAVETRANSFORM = wx.NewId()
@@ -1014,8 +1028,15 @@ class ZVISelectFrame(wx.Frame):
         default_meta=""
         default_image=""
         default_proj=os.getcwd()
+        default_conf="C:\Program Files\Micro-Manager-1.4_nightly.cfg"
         self.MM_FLAG = False
         print "default proj dir",default_proj
+
+        #default MM Settings
+        self.scaling = .1
+        self.num_slices = 0 #MAKE FALSE OR -1 OR SOMETHING, SOME CHECK HERE, DEFAULT OFF!
+        self.corr_coefficient = .3
+        self.focus_params = (4,5,1)    
         
         #recursively call old init function
         wx.Frame.__init__(self, parent, title=title, size=(1400,885),pos=(5,5))
@@ -1025,6 +1046,7 @@ class ZVISelectFrame(wx.Frame):
         options = wx.Menu()   
         transformMenu = wx.Menu()
         SmartSEM_Menu = wx.Menu()
+        MM_Menu = wx.Menu()
         
         #setup the menu options
         self.relative_motion = options.Append(self.ID_RELATIVEMOTION, 'Relative motion?', 'Move points in the ribbon relative to the apparent curvature, else in absolution coordinates',kind=wx.ITEM_CHECK)
@@ -1056,10 +1078,15 @@ class ZVISelectFrame(wx.Frame):
         self.edit_smartsem_settings = SmartSEM_Menu.Append(self.ID_EDIT_SMARTSEM_SETTINGS,'Edit SmartSEMSettings',\
         'Edit the settings used to set the magnification, rotation,tilt, Z position, and working distance of SEM software in position list',kind=wx.ITEM_NORMAL)
         self.Bind(wx.EVT_MENU, self.EditSmartSEMSettings, id=self.ID_EDIT_SMARTSEM_SETTINGS)
+
+        self.edit_MM_settings = MM_Menu.Append(self.ID_EDIT_MM_SETTINGS,'Edit MM Settings',\
+        'Edit the settings used for Micro-Manager type acquisition',kind=wx.ITEM_NORMAL)
+        self.Bind(wx.EVT_MENU, self.Edit_MM_Settings, id=self.ID_EDIT_MM_SETTINGS)
         
         menubar.Append(options, '&Options')
         menubar.Append(transformMenu,'&Transform')
         menubar.Append(SmartSEM_Menu,'&Platform Options')
+        menubar.Append(MM_Menu,'&MM Options')
         self.SetMenuBar(menubar)
         
         #setup a mosaic panel #############################
@@ -1070,7 +1097,7 @@ class ZVISelectFrame(wx.Frame):
         self.meta_filepicker=wx.FilePickerCtrl(self,message='Select a metadata file',\
         path=default_meta,name='metadataFilePickerCtrl1',\
         style=wx.FLP_USE_TEXTCTRL, size=wx.Size(300,100),wildcard='*.*')
-        self.meta_formatBox=wx.ComboBox(self,id=wx.ID_ANY,value='MM',\
+        self.meta_formatBox=wx.ComboBox(self,id=wx.ID_ANY,value='ZVI',\
         size=wx.DefaultSize,choices=['MM','ZVI','ZeissXML'], name='File Format For Meta Data')
         self.meta_formatBox.SetEditable(False)
         self.meta_filepicker.SetPath(default_meta)
@@ -1093,11 +1120,20 @@ class ZVISelectFrame(wx.Frame):
             style=wx.FLP_USE_TEXTCTRL,size=wx.Size(300,100))
         self.proj_folderpicker.SetPath(default_proj)
         self.folder_create_button=wx.Button(self,id=wx.ID_ANY,label="Create",name="folder create")
+
+        #define the microscope configuration file picker
+        self.conf_label=wx.StaticText(self,id=wx.ID_ANY,label="Micromanager microscope config file")
+        self.conf_filepicker=wx.FilePickerCtrl(self,message='Select a MM config file',\
+        path=default_image,name='configFilePickerCtrl1',\
+        style=wx.FLP_USE_TEXTCTRL, size=wx.Size(300,100),wildcard='*.cfg')
+        self.conf_filepicker.SetPath(default_conf)
+        self.config_load_button=wx.Button(self,id=wx.ID_ANY,label="Load",name="config load")
        
         #wire up the button to the "OnLoad" button
         self.Bind(wx.EVT_BUTTON, self.OnImageLoad,self.image_load_button)
         self.Bind(wx.EVT_BUTTON, self.OnMetaLoad,self.meta_load_button)
         self.Bind(wx.EVT_BUTTON, self.OnProjCreate,self.folder_create_button)
+        self.Bind(wx.EVT_BUTTON, self.OnConfLoad,self.config_load_button)
         self.Bind(wx.EVT_BUTTON, self.OnEditImageMetadata,self.meta_enter_button)
         
        
@@ -1138,6 +1174,12 @@ class ZVISelectFrame(wx.Frame):
         self.proj_folderpickersizer.Add(self.proj_label,0,wx.EXPAND)
         self.proj_folderpickersizer.Add(self.proj_folderpicker,1,wx.EXPAND)        
         self.proj_folderpickersizer.Add(self.folder_create_button,0,wx.EXPAND)
+
+        #define a horizontal sizer for them and place the folder picker components in there
+        self.conf_filepickersizer=wx.BoxSizer(wx.HORIZONTAL)
+        self.conf_filepickersizer.Add(self.conf_label,0,wx.EXPAND)
+        self.conf_filepickersizer.Add(self.conf_filepicker,1,wx.EXPAND)        
+        self.conf_filepickersizer.Add(self.config_load_button,0,wx.EXPAND)
         
         #define a horizontal sizer for them and place the file picker components in there
         self.array_filepickersizer=wx.BoxSizer(wx.HORIZONTAL)
@@ -1154,6 +1196,7 @@ class ZVISelectFrame(wx.Frame):
         #place the filepickersizer into the vertical arrangement
         self.sizer.Add(self.image_filepickersizer,0,wx.EXPAND)
         self.sizer.Add(self.proj_folderpickersizer,0,wx.EXPAND)
+        self.sizer.Add(self.conf_filepickersizer,0,wx.EXPAND)
         self.sizer.Add(self.meta_filepickersizer,0,wx.EXPAND)
         self.sizer.Add(self.array_filepickersizer,0,wx.EXPAND)
         self.sizer.Add(self.mosaicCanvas.get_toolbar(), 0, wx.LEFT | wx.EXPAND)
@@ -1170,6 +1213,7 @@ class ZVISelectFrame(wx.Frame):
         
         self.Transform = Transform()
         self.SmartSEMSettings=SmartSEMSettings()
+        self.MMSettings = MMSettings()
         #self.OnImageLoad()
         #self.OnArrayLoad()          
        # self.mosaicCanvas.draw()
@@ -1231,7 +1275,8 @@ class ZVISelectFrame(wx.Frame):
                 self.mosaicCanvas.posList.save_frame_list_SmartSEM(self.array_filepicker.GetPath(),SEMS=self.SmartSEMSettings,trans=self.Transform)    
             else:
                 self.mosaicCanvas.posList.save_frame_list_SmartSEM(self.array_filepicker.GetPath(),SEMS=self.SmartSEMSettings,trans=None)        
-        
+        elif self.array_formatBox.GetValue()=='MM':
+            self.mosaicCanvas.posList.save_frame_list_MM(self.array_filepicker.GetPath())
     
     def GetXMLMetaFloatByIndex(self,dom,index):
         
@@ -1278,7 +1323,7 @@ class ZVISelectFrame(wx.Frame):
         Height=self.FindTag(tagroot,516)
         extent=[xpos-(Width/2)*ScaleFactorX,xpos+(Width/2)*ScaleFactorX,\
                      ypos+(Height/2)*ScaleFactorY,ypos-(Height/2)*ScaleFactorY]
-        print "loaded metadata from xml file, extent was detected to be: "
+        print "loaded metadata from xml file, was detected to be: "
         print extent 
         return extent
 
@@ -1361,9 +1406,9 @@ class ZVISelectFrame(wx.Frame):
         (big_width,big_height)=image.size;
         if scale == True:
             print "scaling, ",filename
-            rescale=10 #CHANGED THIS TO 1 FROM 10, CAN CHANGE BACK BUT HAVE TO WORK IT INTO PADDING
-            small_width=big_width/rescale   
-            small_height=big_height/rescale       
+            rescale=self.scaling
+            small_width=int(big_width*rescale)   
+            small_height=int(big_height*rescale)       
             image=image.resize((small_width,small_height))
 ##            image.show()
             return (image,small_height,small_width)        
@@ -1398,6 +1443,23 @@ class ZVISelectFrame(wx.Frame):
         self.mosaicCanvas.draw()
         self.meta_filepicker.SetPath(filename + "_meta.xml");
         self.array_filepicker.SetPath(os.path.splitext(self.meta_filepicker.GetPath())[0]+".tif-array.csv")
+
+    def OnConfLoad(self,event="none"):
+        """event handler for handling the Load button press for loading MM config file"""
+        filename=str(self.conf_filepicker.GetPath())
+        print filename
+        print filename
+        try:
+            print "Loading MM config file"
+            MM_AT.loadsysconf(filename)
+            print "Successfully loaded config"
+            print "Current stage position: ",MM_AT.getXYZ()
+        except Exception,e:
+            print "\n"
+            print str(e)
+            print ("Unable to load config file. Ensure that your components are powered on,\
+                \nnot in use in another MosaicPlanner, Micro-Manager, or Axiovision instance,\
+                \nand that your configuration file is valid.")
 
     def OnProjCreate(self,event="none"):
         """
@@ -1455,6 +1517,7 @@ class ZVISelectFrame(wx.Frame):
         #passes the settings to the position list
         self.SmartSEMSettings=dlg.GetSettings()
         dlg.Destroy()
+            
         
     def EditTransform(self,event):
         """event handler for clicking the edit transform menu button"""
@@ -1475,7 +1538,29 @@ class ZVISelectFrame(wx.Frame):
         dlg.ShowModal()
         self.mosaicCanvas.setImageExtent(dlg.GetSettings().extent)
         
- 
+    def Edit_MM_Settings(self,event):
+        dlg = ChangeMMSettings(None, -1,
+                                   title="MM Settings",
+                                   settings=self.MMSettings)
+        dlg.ShowModal()
+        del self.MMSettings
+        #then do corrosponding stuff here..
+        self.MMSettings=dlg.GetSettings()
+
+        #set MM settings
+        self.scaling = self.MMSettings.scaling
+        self.num_slices = self.MMSettings.num_slices
+        self.corr_coefficient = self.MMSettings.corr_coefficient
+        self.focus_params = self.MMSettings.focus_params
+        self.exposure = self.MMSettings.exposure
+        self.num_searches = self.MMSettings.num_searches
+        self.win1 = self.MMSettings.win1
+        self.win2 = self.MMSettings.win2
+        self.win3 = self.MMSettings.win3
+        
+        dlg.Destroy()
+        return
+    
 #dirname=sys.argv[1]
 #print dirname
 

@@ -5,10 +5,9 @@ mmc = MMCorePy.CMMCore()
 info = mmc.getVersionInfo()
 print info,"\n"
 
-def loadsysconf(conf="Micro-Manager-1.4_nightly.cfg"):
+def loadsysconf(conf):
      mmc.loadSystemConfiguration(conf)
 
-loadsysconf()
 def setExposure(exposure_ms):
     mmc.setExposure(exposure_ms)
 

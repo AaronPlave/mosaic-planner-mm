@@ -13,7 +13,6 @@ def sixteen2eightB(img16):
     
     return img8
 
-print "Current stage position: ",getXYZ()
 
 
 def wait_Zstage(): #could also do a while getXYZ != target, pass?
@@ -24,14 +23,14 @@ def wait_XYstage():
 ##        pass
     time.sleep(.2)
     
-def get(pos,auto=False): #hmm, have get calling auto and auto calling get. bad.
+def get(pos,auto=False,steps=False,rough_size=False,fine_size=False): #hmm, have get calling auto and auto calling get. bad.
     """sets pos, snaps image at pos"""
     setXY(pos[0],pos[1])
     curr = (getXYZ()[0],getXYZ()[1])
     if curr != (pos[0],pos[1]):
         wait_XYstage()
     if auto:
-        z = autofocus(pos,4,5,2)
+        z = autofocus(pos,steps,rough_size,fine_size)
         setZ(z[0][2])
         wait_Zstage()
         return z
@@ -39,12 +38,14 @@ def get(pos,auto=False): #hmm, have get calling auto and auto calling get. bad.
         im = sixteen2eightB(snapImage())
         return im
 
+#THIS IS AN UNUSED FUNCTION
 def guess_next_linear(p1,p2): #eventually modify to include a real Z guess?
     dx,dy = p2[0]-p1[0],p2[1]-p1[1]
     p3 = (p2[0]+dx,p2[1]+dy,p2[2]) #just using last Z for current Z
 ##    print p3,"p3 guess"
     return p3
 
+#TEST FUNCTION
 def main(num_pos):
     setXY(p2[0],p2[1])
 
@@ -59,6 +60,7 @@ def main(num_pos):
         
     return positions
 
+#DETERMINES SCORE OF IMAGE BASED ON MAX HISTOGRAM VALUE
 def sharpness(image):
     hist = image.histogram()
     score = max(hist)
@@ -71,7 +73,7 @@ def autofocus(pos,steps,rough_step,fine_step):
     """
 ##    print "starting autofocus"
     start = time.clock()
-
+    print "pos,steps,rough_step,fine_step = ",pos,steps,rough_step,fine_step
     #set initial position
     setXY(pos[0],pos[1])
     wait_XYstage() #add check for curr pos == set pos here if it hangs
@@ -149,16 +151,6 @@ def autofocus(pos,steps,rough_step,fine_step):
     time.sleep(.1)
     return best
 
-##
-##
-mmc.setAutoShutter(0)
-mmc.setShutterOpen(1)
-setExposure(150)
-##x = get(getXYZ(),True)
-####main(1)
-##mmc.setShutterOpen(0)
-##
-##
 
 def main2():
     mmc.setAutoShutter(0)

@@ -159,8 +159,7 @@ class MosaicImage():
         (matrix_height,matrix_width)=imagematrix.shape
         self.matrix_scale=matrix_width/width_um
 
-##        self.matrix_scale = .6 #because I'm not scaling right now?
-##        print "px/Um downsample",self.matrix_scale
+        print "px/Um downsample",self.matrix_scale
         
         
         
@@ -180,6 +179,9 @@ class MosaicImage():
         #returns new mosaic and new extent
 
         #checking to see whether tile or mosaic has the maximum/min for extent
+
+        print "scaling = ",scaling
+        
         if tile_extent[0] <= mosaic_extent[0]:
             minx = tile_extent[0]
         else:
@@ -217,7 +219,7 @@ class MosaicImage():
        
         return im,extent
         
-    def extendMosaicTiff(self, mosaic, image_file_name, low_res_image_array, old_extent):
+    def extendMosaicTiff(self, mosaic, image_file_name, low_res_image_array, old_extent,scaling):
         #add new image to image files
         self.imagefiles.append(image_file_name)
         
@@ -230,7 +232,6 @@ class MosaicImage():
         self.imageExtents[image_file_name] = tile_extent
         
         #pad low res
-        scaling = .1 #GET THIS FROM SOMEWHERE!!
         self.imagematrix,self.extent=self.pad(mosaic,low_res_image_array,old_extent,tile_extent,scaling)
 
 ##        print "img matrix"
@@ -257,12 +258,9 @@ class MosaicImage():
             
     
     def findHighResImageFile(self,x,y):
-##        print "finding high res image file"
         #assume x and y are stage coordinates (in microns)
-        
         for img in self.imagefiles: #eventually turn this into a dict instead of parsing each time
             #grab metadata
-            
             (tile_extent,zpos) = MetadataHandler.LoadMetadata(img)
             
             if x >= tile_extent[0] and x <= tile_extent[1]:

@@ -27,6 +27,33 @@ class CameraSettings():
         #in microns
         self.pix_width=pix_width
         self.pix_height=pix_height
+
+class MMSettings():
+    """simple struct for conatining the parameters for MM acquisition"""
+    def __init__(self,scaling=.1,num_slices=0,corr_coefficient=.3,focus_params=(4,5,1),
+                 exposure=150,num_searches=3,win1=100,win2=300,win3=600,search_params=False,boxes=False):
+        self.scaling = scaling
+        self.num_slices = num_slices
+
+        #Bool to enable or disable box search, should be off by default, use for very curvy ribbon
+        self.boxes = boxes
+        self.corr_coefficient = corr_coefficient
+
+        #not yet implemented
+##        self.num_searches = num_searches
+
+        #list/dict mapping each search (one through three for now) to individual parameters like window size
+        self.search_params = search_params
+
+        #tuple of required focus params = # steps for each focus, rough step size, fine step size
+        self.focus_params = focus_params
+
+        self.exposure = exposure
+
+        self.num_searches = num_searches
+        self.win1 = win1
+        self.win2 = win2
+        self.win3 = win3
         
 class MosaicSettings:
     def __init__(self,mag=65.486,mx=1,my=1,overlap=10,show_box=False,show_frames=False):
@@ -91,6 +118,81 @@ class ChangeCameraSettings(wx.Dialog):
                               sensor_height=self.heightIntCtrl.GetValue(),
                               pix_width=self.pixwidthFloatCtrl.GetValue(),
                               pix_height=self.pixheightFloatCtrl.GetValue())
+
+class ChangeMMSettings(wx.Dialog):
+    """Settings for MM acquisition"""
+    def __init__(self, parent, id, title, settings):
+        wx.Dialog.__init__(self, parent, id, title, size=(700, 700))
+        panel = wx.Panel(self, -1)
+        vbox = wx.BoxSizer(wx.VERTICAL)       
+
+        self.scalingFloatCtrl=wx.lib.agw.floatspin.FloatSpin(panel, pos=(260,5),size=( 90, -1 ),
+                                       value=settings.scaling,
+                                       min_val=0.0,
+                                       max_val=1.0,
+                                       increment=.05,
+                                       digits=2,
+                                       name='scaling')
+        self.numSlicesIntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.num_slices,pos=(260,35),size=( 90, -1 ) )
+
+        self.corr_coefficientIntCtrl=wx.lib.agw.floatspin.FloatSpin(panel, pos=(260,65),size=( 90, -1 ),
+                                       value=settings.corr_coefficient,
+                                       min_val=0.0,
+                                       max_val=1.0,
+                                       increment=.05,
+                                       digits=2,
+                                       name='corr_coefficient')
+        
+        self.stepsIntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.focus_params[0],pos=(260,95),size=( 90, -1 ) )
+        self.roughDistIntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.focus_params[1],pos=(260,125),size=( 90, -1 ) )
+        self.fineDistIntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.focus_params[2],pos=(260,155),size=( 90, -1 ) )
+        self.ExposureIntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.exposure,pos=(260,185),size=( 90, -1 ) )
+        self.num_searchesIntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.num_searches,pos=(260,215),size=( 90, -1 ) )
+        self.win1IntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.win1,pos=(260,245),size=( 90, -1 ) )
+        self.win2IntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.win2,pos=(260,275),size=( 90, -1 ) )
+        self.win3IntCtrl=wx.lib.intctrl.IntCtrl( panel, value=settings.win3,pos=(260,305),size=( 90, -1 ) )
+                                 
+        wx.StaticText(panel,id=wx.ID_ANY,label="Scaling (0-1)",pos=(5,8))
+        wx.StaticText(panel,id=wx.ID_ANY,label="Number of positions (optional)",pos=(5,38))  
+        wx.StaticText(panel,id=wx.ID_ANY,label="Cross corr coefficient (0-1)",pos=(5,68))  
+        wx.StaticText(panel,id=wx.ID_ANY,label="Number of steps for each focus",pos=(5,98)) 
+        wx.StaticText(panel,id=wx.ID_ANY,label="Rough step size (Um)",pos=(5,128))
+        wx.StaticText(panel,id=wx.ID_ANY,label="Fine step size (Um)",pos=(5,158))
+        wx.StaticText(panel,id=wx.ID_ANY,label="Exposure (ms)",pos=(5,188))
+        wx.StaticText(panel,id=wx.ID_ANY,label="Number of searches (1-3)",pos=(5,218))
+        wx.StaticText(panel,id=wx.ID_ANY,label="Window size of search one",pos=(5,248))
+        wx.StaticText(panel,id=wx.ID_ANY,label="Window size of search two",pos=(5,278))
+        wx.StaticText(panel,id=wx.ID_ANY,label="Window size of search three",pos=(5,308))
+        
+        #ADD BOXES OPTION
+        #
+        #ADD SEARCH PARAMS OPTION FOR 1-3rd SEARCHES
+        
+
+                                         
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        okButton = wx.Button(self, wx.ID_OK, 'Ok', size=(70, 30))
+       # closeButton = wx.Button(self, wx.ID_CLOSE, 'Close', size=(70, 30))
+        hbox.Add(okButton, 1)
+        #hbox.Add(closeButton, 1, wx.LEFT, 5)
+        vbox.Add(panel)
+        vbox.Add(hbox, 1, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
+        self.SetSizer(vbox)
+        
+    def GetSettings(self):
+        """extracts the Camera Settings from the controls"""
+        return MMSettings(scaling=self.scalingFloatCtrl.GetValue(),
+                              num_slices=self.numSlicesIntCtrl.GetValue(),
+                              corr_coefficient=self.corr_coefficientIntCtrl.GetValue(),
+                              focus_params=(self.stepsIntCtrl.GetValue(),
+                              self.roughDistIntCtrl.GetValue(),
+                              self.fineDistIntCtrl.GetValue()),
+                              exposure=self.ExposureIntCtrl.GetValue(),
+                              num_searches=self.num_searchesIntCtrl.GetValue(),
+                              win1=self.win1IntCtrl.GetValue(),
+                              win2=self.win2IntCtrl.GetValue(),
+                              win3=self.win3IntCtrl.GetValue()
+                              )
         
 class ImageSettings():
     def __init__(self,extent=[0,10,10,0]):
@@ -153,6 +255,7 @@ class ChangeSEMSettings(wx.Dialog):
         wx.StaticText(panel,id=wx.ID_ANY,label="rotation (radians)",pos=(5,68))  
         wx.StaticText(panel,id=wx.ID_ANY,label="Z location (mm)",pos=(5,98))
         wx.StaticText(panel,id=wx.ID_ANY,label="WD working distance? (mm)",pos=(5,128))
+        
                                          
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         okButton = wx.Button(self, wx.ID_OK, 'Ok', size=(70, 30))

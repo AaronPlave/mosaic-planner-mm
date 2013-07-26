@@ -481,7 +481,7 @@ class posList():
                 writer.writerow(['%03d: %f'%(index,xt),yt,Z])  
                 
 
-    def save_position_list_MM(self,filename,z_list=None):
+    def save_position_list_MM(self,filename):
         self.__sort_points()
         for i in self.slicePositions: print i.x,i.y,i.z
         base = {"VERSION":3,"ID":"Micro-Manager XY-position list", "POSITIONS": []}
@@ -581,8 +581,44 @@ class posList():
                     writer.writerow(["S%03d_F%03d"%(index,frameindex),framepos.x,framepos.y,0," blue "," blue "])    
                 else:
                     (xt,yt)=trans.transform(framepos.x,framepos.y)
-                    writer.writerow(["S%03d_F%03d"%(index,frameindex),xt,yt,0," blue "," blue "]) 
+                    writer.writerow(["S%03d_F%03d"%(index,frameindex),xt,yt,0," blue "," blue "])
                     
+    def save_frame_list_MM(self,filename):
+        """save the positionlist to a micromanager position list format, json format, where each frame of the mosaic is its own position
+        
+        keywords:
+        filename)a string containing the path of the file to save list into
+        trans)an optional transform object which will cause the points to be saved to the file, not with their original
+        coordinates, but with the coordinates run through the trans.transform(x,y) method
+        """  
+        self.__sort_points()        
+
+        for i in self.slicePositions: print i.x,i.y,i.z
+        base = {"VERSION":3,"ID":"Micro-Manager XY-position list", "POSITIONS": []}
+        pos_template = {'GRID_ROW': 0, 'GRID_COL': 0, 'DEFAULT_Z_STAGE': 'ZeissFocusAxis',
+                        'DEVICES': [{'DEVICE': 'ZeissXYStage', 'Y': 0, 'Z': 0,'AXES': 2, 'X': 0},
+                                    {'DEVICE': 'ZeissFocusAxis','Y': 0, 'Z': 0, 'AXES': 1,'X': 0}],
+                        'LABEL': '1-Pos_000_000',
+                        'DEFAULT_XY_STAGE': 'ZeissXYStage',
+                        'PROPERTIES': {'OverlapUm': '0.0000', 'OverlapPixels': '0'}}
+        
+        positions = []
+        for pos in self.slicePositions:
+            pos.frameList.__sort_points(vertsort=True)
+            for framepos in pos.frameList.slicePositions:
+                cp = deepcopy(pos_template)
+                cp['DEVICES'][0]['X'] = framepos.x
+                cp['DEVICES'][0]['Y'] = framepos.x
+                cp['DEVICES'][1]['X'] = pos.z
+                positions.append(cp)
+                print cp
+                cp = ""
+
+        base['POSITIONS'] = positions
+        f_out = open(filename,'wb')
+        f_out.write(json.dumps(base))
+        f_out.close()
+  
     def __sort_points(self,vertsort=False):
         """sort the slicePositions in the list according to their x value"""
         if self.dosort:
