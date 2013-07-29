@@ -30,7 +30,7 @@ class CameraSettings():
 
 class MMSettings():
     """simple struct for conatining the parameters for MM acquisition"""
-    def __init__(self,scaling=.1,num_slices=0,corr_coefficient=.3,focus_params=(4,5,1),
+    def __init__(self,scaling=.1,num_slices=0,corr_coefficient=.3,focus_params=(4,10,2),
                  exposure=150,num_searches=3,win1=100,win2=300,win3=600,search_params=False,boxes=False):
         self.scaling = scaling
         self.num_slices = num_slices

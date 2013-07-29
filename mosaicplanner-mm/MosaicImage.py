@@ -149,7 +149,7 @@ class MosaicImage():
         #calculate the width of the image (calling it _um assuming its in units of microns)
         #from now on I will assume the units are in microns, though if they were in some other unit it would just carry through
         width_um=self.extent[1]-self.extent[0]
-        width_um *= .6     
+        width_um *= .6  #GENERALIZE THIS TO PX_UM   
         
         
         #calculate the pixels/micron of full resolution picture
@@ -179,8 +179,6 @@ class MosaicImage():
         #returns new mosaic and new extent
 
         #checking to see whether tile or mosaic has the maximum/min for extent
-
-        print "scaling = ",scaling
         
         if tile_extent[0] <= mosaic_extent[0]:
             minx = tile_extent[0]
@@ -265,8 +263,7 @@ class MosaicImage():
             
             if x >= tile_extent[0] and x <= tile_extent[1]:
                 if y >= tile_extent[2] and y <= tile_extent[3]:   
-##                    print img,"IMG!"
-                    return img,zpos
+                    return img,zpos,tile_extent
         print "no high res tile found"        
         return False #did not find HightResImageFile containing x,y coords
 

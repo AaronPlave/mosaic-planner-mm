@@ -78,7 +78,7 @@ def LoadMMMetaData(filename):
            ypos-(Height/2)*ScaleFactorY,ypos+(Height/2)*ScaleFactorY] #FOR NOW
 
         #WHY WAS IT + THEN - FOR Y??
-##    print extent, "HERE"
+    print zpos, "ZPOS FROM METADATAHANDLER"
     return extent,zpos
     
 def LoadZVIMetaData(filename):

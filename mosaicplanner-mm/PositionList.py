@@ -118,13 +118,14 @@ class posList():
         if (self.pos1 == None or self.pos2==None):
             return None
         else:
+            print "NEW_POS_AFTER_STEP X,Y,Z",self.pos2.x,self.pos2.y,self.pos2.z
             dx=self.pos2.x-self.pos1.x
             dy=self.pos2.y-self.pos1.y
             
             #add the new position using the add_position function
             try: #not so clean way to check for MM project y pos..
                 print "trying this"
-                newpos=self.add_position(self.pos2.x+dx,self.pos2.y+dy,self.pos2.y)
+                newpos=self.add_position(self.pos2.x+dx,self.pos2.y+dy,self.pos2.z)
                 print "worked here"
             except:
                 newpos=self.add_position(self.pos2.x+dx,self.pos2.y+dy)
@@ -342,7 +343,7 @@ class posList():
         """
         if z:
             newPosition=slicePosition(axis=self.axis,pos_list=self,x=x,y=y,z=z,edgecolor=edgecolor,withpoint=withpoint,showNumber=self.shownumbers)
-            print "did this in add pos"
+            print "did this in add pos, z = ",z
         else:
             newPosition=slicePosition(axis=self.axis,pos_list=self,x=x,y=y,edgecolor=edgecolor,withpoint=withpoint,showNumber=self.shownumbers)
             print "did NOT make slice pos with add_pos"
@@ -608,7 +609,7 @@ class posList():
             for framepos in pos.frameList.slicePositions:
                 cp = deepcopy(pos_template)
                 cp['DEVICES'][0]['X'] = framepos.x
-                cp['DEVICES'][0]['Y'] = framepos.x
+                cp['DEVICES'][0]['Y'] = framepos.y
                 cp['DEVICES'][1]['X'] = pos.z
                 positions.append(cp)
                 print cp
@@ -693,13 +694,14 @@ class slicePosition():
         self.x=x
         self.y=y
 
+        print x,y,"x,y ---sliceposition()"
+        if z: print z,"z"
+
+
         #Added Z position
         if z:
-            print "init sclice with z"
             self.z=z
-            print self.z
-        if not z:
-            print "NO Z"
+            
         self.selected=selected
         self.withpoint=withpoint
         self.number = number

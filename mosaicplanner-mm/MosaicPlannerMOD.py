@@ -38,7 +38,10 @@ import json
 import img as Acq
 import collections
 import sys
+import shutil
 import Image #chANGE TO from PIL import Image -for 64 bit sometimes
+from matplotlib.patches import Rectangle
+
 
 class MosaicToolbar(NavBarImproved):
     """A custom toolbar which adds buttons and to interact with a MosaicPanel
@@ -74,14 +77,17 @@ class MosaicToolbar(NavBarImproved):
     """
     ON_FIND = wx.NewId()
     ON_SELECT  = wx.NewId()
+    ON_SELECT_IMG = wx.NewId()
     ON_NEWPOINT = wx.NewId()
     ON_DELETE_SELECTED = wx.NewId()
+    ON_DELETE_IMG = wx.NewId()
     #ON_CORR_LEFT = wx.NewId()
     ON_STEP = wx.NewId()
     ON_FF = wx.NewId()
     ON_LOADIMG = wx.NewId()
     ON_LOADIMG2 = wx.NewId()
     ON_NEXT = wx.NewId()
+    ON_MANUAL_IMG = wx.NewId()    
     ON_CORR = wx.NewId() 
     ON_FINETUNE = wx.NewId()
     ON_GRID = wx.NewId()
@@ -119,6 +125,7 @@ class MosaicToolbar(NavBarImproved):
     
         
         #add the mutually exclusive/toggleable tools to the toolbar, see superclass for details on how function works
+        self.selectImg=self.add_user_tool('selectImg',6,selectnearBmp,True,'Add Nearest Image to selection')        
         self.selectNear=self.add_user_tool('selectnear',7,selectnearBmp,True,'Add Nearest Point to selection')
         self.selectTool=self.add_user_tool('select', 8, selectBmp, True, 'Select Points')
         self.addTool=self.add_user_tool('add', 9, addpointBmp, True, 'Add a Point')     
@@ -131,13 +138,14 @@ class MosaicToolbar(NavBarImproved):
         #add the simple button click tools
         #self.leftcorrTool=self.AddSimpleTool(self.ON_CORR_LEFT,leftcorrBmp,'do something with correlation','correlation baby!') 
         self.deleteTool=self.AddSimpleTool(self.ON_DELETE_SELECTED,trashBmp,'Delete selected points','delete points') 
+        self.deleteImg=self.AddSimpleTool(self.ON_DELETE_IMG,trashBmp,'Delete selected image','delete img')
         self.corrTool=self.AddSimpleTool(self.ON_CORR,corrBmp,'Ajdust pointLine2D 2 with correlation','corrTool') 
         self.stepTool=self.AddSimpleTool(self.ON_STEP,stepBmp,'Take one step using points 1+2','stepTool')     
         self.ffTool=self.AddSimpleTool(self.ON_FF,ffBmp,'Auto-take steps till C<.3 or off image','fastforwardTool')       
         self.loadimages=self.AddSimpleTool(self.ON_LOADIMG,ffBmp,'Load first image manually')
         self.loadimages2=self.AddSimpleTool(self.ON_LOADIMG2,stepBmp,'Load second image manually')
         self.nextimage=self.AddSimpleTool(self.ON_NEXT,corrBmp,'Acquire new images automatically')
-        
+        self.nextimage=self.AddSimpleTool(self.ON_MANUAL_IMG,corrBmp,'Acquire new images manually without autofocus')
         #add the toggleable tools
         self.gridTool=self.AddCheckTool(self.ON_GRID,gridBmp,wx.NullBitmap,'toggle rotate boxes')
         #self.finetuneTool=self.AddSimpleTool(self.ON_FINETUNE,smalltargetBmp,'auto fine tune positions','finetuneTool')  
@@ -200,12 +208,14 @@ class MosaicToolbar(NavBarImproved):
         self.Bind(wx.lib.intctrl.EVT_INT,self.updateSliderRange, self.sliderMaxCtrl)
         
         wx.EVT_TOOL(self, self.ON_DELETE_SELECTED, self.canvas.OnDeletePoints)  
+        wx.EVT_TOOL(self, self.ON_DELETE_IMG, self.canvas.DeleteImg)
         wx.EVT_TOOL(self, self.ON_CORR, self.canvas.OnCorrTool)        
         wx.EVT_TOOL(self, self.ON_STEP, self.canvas.OnStepTool)           
         wx.EVT_TOOL(self, self.ON_FF, self.canvas.OnFastForwardTool)
         wx.EVT_TOOL(self, self.ON_LOADIMG, self.canvas.ButtonLoad) ################################################ for loading first image
         wx.EVT_TOOL(self, self.ON_LOADIMG2, self.canvas.ButtonLoad2) ################################################ for loading second image
         wx.EVT_TOOL(self, self.ON_NEXT, self.canvas.NextImage) #################################################### for loading next images automatically
+        wx.EVT_TOOL(self, self.ON_MANUAL_IMG, self.canvas.Manual_Img) #################################################### for loading next images automatically
         wx.EVT_TOOL(self, self.ON_GRID, self.canvas.OnGridTool)
         #wx.EVT_TOOL(self, self.ON_FINETUNE, self.canvas.OnFineTuneTool)
         #wx.EVT_TOOL(self, self.ON_REDRAW, self.canvas.OnRedraw)
@@ -292,6 +302,13 @@ class MosaicPanel(FigureCanvas):
         #s = sin(2*pi*self.t)
         #self.subplot.plot(self.t,s)
 
+        #initialize which images are currently selected
+        self.selected_imgs = ['init',[0,0,0,0]]
+        self.img_box = ""
+        #initialize tile height and width
+        self.tile_height = 1040
+        self.tile_width = 1380
+
         ########MOVE TO mosaicImage eventually, SETUP PREVIOUS Z LIST
         self.prevZ=[]
 
@@ -362,16 +379,46 @@ class MosaicPanel(FigureCanvas):
                         if not evt.key=='shift':
                             self.posList.set_select_all(False)
                         pos.set_selected(True)
+                        
+                    if (mode == 'selectImg'):
+                        try:
+                            (img,zpos,extent) = self.mosaicImage.findHighResImageFile(evt.xdata,evt.ydata)
+                            print img, extent
+##                            if not evt.key=='shift':
+                            #select only current select
+                            print "solo"
+##                            print "solo keys",self.selected_imgs.keys()
+##                            if img not in self.selected_imgs.keys():
+                            print "tr"
+                            print self.selected_imgs
+                            try:
+                                self.img_box.set_visible(False)
+                            except:
+                                print "first time"
+                            self.selected_imgs = [img,extent]
+##                            elif evt.key=='shift':
+##                                #add to list
+##                                print "shift"
+##                                print "shift keys",self.selected_imgs.keys()
+##                                if img not in self.selected_imgs.keys():
+##                                    print "tr2"
+##                                    self.selected_imgs[img] = extent
+                            print self.selected_imgs
+                            self.img_highlight() #highlights/enables for deletion all images in selected_imgs
+
+                        except TypeError:
+                            print "No image found in this location"
+                                    
                     elif (mode == 'add'):
                         #CHECK FOR MM PROJECT
+                        print self.Parent.MM_FLAG
                         if self.Parent.MM_FLAG == True:
-                            print "Initialize Z position as 0 "
+                            zpos = self.mosaicImage.findHighResImageFile(evt.xdata,evt.ydata)[1]
                             self.posList.add_position(
                                 evt.xdata,evt.ydata,
-                                self.mosaicImage.findHighResImageFile(evt.xdata,evt.ydata)[1]) #set tile z
+                                zpos) #set tile z
                             
                         if self.Parent.MM_FLAG == False:
-                            print "Not adding Z positions"
                             self.posList.add_position(evt.xdata,evt.ydata)               
                     elif (mode  == 'select' ):
                         self.lasso = MyLasso(evt.inaxes, (evt.xdata, evt.ydata), self.lasso_callback,linecolor='white')
@@ -414,9 +461,69 @@ class MosaicPanel(FigureCanvas):
         self.draw()
         
     def OnDeletePoints(self,event="none"):
-        """handlier for handling the Delete tool press"""
+        """handler for handling the Delete tool press"""
         self.posList.delete_selected()
         self.draw()
+
+    def DeleteImg(self,event="none"):
+        """handler for handling the Delete Image tool press"""
+        img = self.selected_imgs[0]
+        print img
+
+        print self.mosaicImage.imagefiles
+        self.mosaicImage.imagefiles.remove(img)
+        print self.mosaicImage.imagefiles
+        
+        #calculating new extent and padding
+
+        #first image in list
+        extent = MetadataHandler.LoadMetadata(self.mosaicImage.imagefiles[0])[0]
+
+        
+        #calculate extent of first tile again
+        extent = MetadataHandler.LoadMetadata(self.mosaicImage.imagefiles[0])[0]
+        (image,small_height,small_width)=self.Parent.LoadImage(self.mosaicImage.imagefiles[0],True) #scaling = yes
+        if len(self.mosaicImage.imagefiles) == 1:
+            #draw first image
+            print "Loading first image..."
+            self.Parent.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,self.mosaicImage.imagefiles[0],self.Parent.proj_folder,flipVert=self.Parent.flipvert.IsChecked())
+            self.Parent.mosaicCanvas.draw()
+            self.Parent.mosaicCanvas.setImageExtent(extent)
+    
+        else:
+            print "#########",self.mosaicImage.imagefiles
+            
+            for i in range(len(self.mosaicImage.imagefiles)):
+                print i,self.mosaicImage.imagefiles[i],"IMAGE"
+                mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)[0]
+                extent2 = self.mosaicImage.extendMosaicTiff(mosaic,self.mosaicImage.imagefiles[i],self.Parent.LoadImage(self.mosaicImage.imagefiles[i],True)[0],extent,self.Parent.scaling)
+                print extent2
+                
+            #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
+            (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)
+
+            self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
+            self.Parent.mosaicCanvas.draw()
+            self.Parent.mosaicCanvas.setImageExtent(extent2)
+       
+        directory = os.path.dirname(img)
+        print directory,"end of this shiz"
+        #DELETE AFTER YOU REDO THE MOSAIC
+        #shutil.rmtree(directory)
+        #ALSO REMOVE THE IMG HIGHLIGHT
+        #TEST MORE, DOESN'T WORK SECOND/MAYBE FIRST TIME...
+        
+
+    def img_highlight(self):
+        """
+        highlight selected images marked for deletion.
+        """
+        x,y = self.selected_imgs[1][0],self.selected_imgs[1][2]
+        scaling = self.Parent.scaling
+        width,height = self.tile_width*.6,self.tile_height*.6 #GENERALIZE THIS
+        print x,y,width,height
+        self.img_box = Rectangle((x,y), width, height,fill=False,edgecolor='c')
+        self.mosaicImage.axis.add_patch(self.img_box)
         
     def OnRotateTool(self,evt):
         """handler for handling when the Rotate tool is toggled"""
@@ -545,7 +652,7 @@ class MosaicPanel(FigureCanvas):
         
     def setImageExtent(self,extent):
         if not self.mosaicImage==None:
-            print extent
+##            print extent
             self.mosaicImage.set_extent(extent)
             self.draw()
         
@@ -666,7 +773,7 @@ class MosaicPanel(FigureCanvas):
     def ButtonLoad(self,evt="None"):
 
         #PUT THIS IN POSLIST LATER
-        self.z_positions = collections.OrderedDict()
+##        self.z_positions = collections.OrderedDict()
         
         #grab first image from microscope
         (steps,rough_size,fine_size) = self.Parent.focus_params
@@ -685,8 +792,8 @@ class MosaicPanel(FigureCanvas):
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
-        self.z_positions[str((x,y))] = z
-        print self.z_positions
+##        self.z_positions[str((x,y))] = z
+##        print self.z_positions
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -703,24 +810,13 @@ class MosaicPanel(FigureCanvas):
         new_meta.write(meta)
         new_meta.close()
 
+        #set tile width and height
+        self.tile_height = height
+        self.tile_width = width
+
         #calculate extent ------COULD PROBABLY JUST USE THE IMG FROM MEMORY, OR ELSE CLOSE IT
         extent = MetadataHandler.LoadMetadata(f_out)[0]
         (image,small_height,small_width)=self.Parent.LoadImage(f_out,True) #scaling = yes
-        
-
-##########################################
-            #Manual file option
-##        openfiledialog = wx.FileDialog(self,"Open Image File","","","*.tif",wx.FD_OPEN)
-##        if openfiledialog.ShowModal() == wx.ID_CANCEL:
-##            return
-##        self.image_filepicker1 = openfiledialog.GetPath()
-
-##        #calculate extent from metadata
-##        extent = MetadataHandler.LoadMetadata(self.image_filepicker1)
-##        (image,small_height,small_width)=self.Parent.LoadImage(self.image_filepicker1)
-##        image = self.sixteen2eight(image)
-
-#########################################
         
         #draw first image
         print "Loading first image..."
@@ -753,7 +849,7 @@ class MosaicPanel(FigureCanvas):
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
-        self.z_positions[str((x,y))]=z
+##        self.z_positions[str((x,y))]=z
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -782,8 +878,60 @@ class MosaicPanel(FigureCanvas):
         self.Parent.mosaicCanvas.draw()
         self.Parent.mosaicCanvas.setImageExtent(extent2)
         return
+    
+    def Manual_Img(self,evt="None"): #could add option for autofocus, need a dialogue box then..
+        """
+        Snaps an image at current position without autofocus on button activation. 
+        """
+        #grab image from microscope
+        (x,y,z) = MM_AT.getXYZ()
+        orig_pos = (x,y,z)
+        MM_AT.setAutoShutter(0)
+        MM_AT.setShutter(1)
+        MM_AT.setExposure(self.Parent.exposure)
+        img = Acq.get(orig_pos,False)
+        MM_AT.setShutter(0)
+        
+        #check if tile folder exists
+        new_tiles = os.path.join(self.Parent.proj_folder,'new_tiles')
+        if not os.path.exists(new_tiles):
+            os.mkdir('new_tiles')
+            print "making new_tiles dir, THIS SHOULDN'T HAPPEN!"
+        
+        #create new dir for image, save im
+        (x,y,z) = MM_AT.getXYZ()
+##        self.z_positions[str((x,y))] = z
+##        print self.z_positions
+        str_xyz = str((x,y,z))    
+        newdir = os.path.join(new_tiles,str_xyz)
+        os.mkdir(newdir)
+        f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
+        img.save(f_out)
+        
+        #write new image metadata to file, fix pixel size, currently not grabbing right 
+        width,height,Pxsize,Xpos,Ypos,Zpos = img.size[0],img.size[1],.6,x,y,z
+        d = {"Summary":{"Width":width,"Height":height,
+                        "PixelSize_um":Pxsize},
+             "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
+        meta = json.dumps(d)
+        new_meta = open(os.path.join(newdir,'metadata.txt'),'w')
+        new_meta.write(meta)
+        new_meta.close()
 
+        #calculating new extent and padding
+        extent = self.mosaicImage.extent
 
+        mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)[0]
+        
+        extent2 = self.mosaicImage.extendMosaicTiff(mosaic,f_out,self.Parent.LoadImage(f_out,True)[0],extent,self.Parent.scaling)
+        
+        #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
+        (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)
+
+        self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
+        self.Parent.mosaicCanvas.draw()
+        self.Parent.mosaicCanvas.setImageExtent(extent2)
+        
     def z_diff(self,p1,p2):
         """
         Calculates z diff between two points, maybe change this later to return a range of acceptable
@@ -805,7 +953,7 @@ class MosaicPanel(FigureCanvas):
 
         #If user specified num_slices, use that, else no stop (default value = 0)
         stop = self.Parent.num_slices
-        print "STOP = ",stop
+##        print "STOP = ",stop
 
         #Acquire               
         while go:
@@ -842,9 +990,7 @@ class MosaicPanel(FigureCanvas):
         new_z = self.image_capture(x3,y3,z3)
 
         #Have to append z3 to current position in PosList
-##        self.z_positions.append(new_z)
-##        self.posList.pos2.z = new_z
-        print self.z_positions,"Zzzzs"
+        self.posList.pos2.z = new_z
         print self.posList.pos2.x,self.posList.pos2.y,self.posList.pos2.z,"!@#$%"
         print "image_capture time = ",time.clock()-start_capt
 
@@ -1036,7 +1182,15 @@ class ZVISelectFrame(wx.Frame):
         self.scaling = .1
         self.num_slices = 0 #MAKE FALSE OR -1 OR SOMETHING, SOME CHECK HERE, DEFAULT OFF!
         self.corr_coefficient = .3
-        self.focus_params = (4,5,1)    
+        self.focus_params = (4,10,2)
+        self.exposure = 150
+        self.num_searches = 0
+        self.win1 = 100
+        self.win2 = 300
+        self.win3 = 600
+
+            
+        
         
         #recursively call old init function
         wx.Frame.__init__(self, parent, title=title, size=(1400,885),pos=(5,5))
