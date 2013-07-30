@@ -33,3 +33,6 @@ No additional 3rd party libraries are needed (I think). To run, place all of the
 #Known issues:
 -Needs more testing of main functions. Most work well, but occasionally there are weird results.
 -More to come since many more exist.
+
+
+Also need to configure gitignore to ignore *.pyc
