@@ -16,7 +16,15 @@
 #  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 #===============================================================================
- 
+
+
+### MOSAICPLANNERMOD + MODULES MUST BE RUN IN THE ROOT MICRO-MANAGER DIRECTORY####
+
+
+#Allows MosaicPlannerMOD to be run in any directory and still have access to the Micro-Manager directory. Just kidding, doesn't work. But you can at least open the program to see if your modules work.
+import sys
+sys.path.append('C:\Program Files\Micro-Manager-1.4')
+
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from NavigationToolBarImproved import NavigationToolbar2Wx_improved as NavBarImproved
 from matplotlib.figure import Figure
@@ -39,6 +47,7 @@ import img as Acq
 import collections
 import sys
 import shutil
+import glob
 import Image #chANGE TO from PIL import Image -for 64 bit sometimes
 from matplotlib.patches import Rectangle
 
@@ -122,37 +131,52 @@ class MosaicToolbar(NavBarImproved):
         smalltargetBmp = wx.Image('icons/small-target-icon.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         rotateBmp = wx.Image('icons/rotate-icon.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         gridBmp = wx.Image('icons/grid-icon.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
-    
+
+        #new icons
+        selectImgBmp=wx.Image('icons/selectImg.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        deleteImgBmp=wx.Image('icons/deleteImg.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        addOneBmp=wx.Image('icons/image_add1.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        addTwoBmp=wx.Image('icons/image_add2.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        runBmp=wx.Image('icons/user_run.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        manualBmp=wx.Image('icons/image_add_manual.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+
         
         #add the mutually exclusive/toggleable tools to the toolbar, see superclass for details on how function works
-        self.selectImg=self.add_user_tool('selectImg',6,selectnearBmp,True,'Add Nearest Image to selection')        
         self.selectNear=self.add_user_tool('selectnear',7,selectnearBmp,True,'Add Nearest Point to selection')
         self.selectTool=self.add_user_tool('select', 8, selectBmp, True, 'Select Points')
         self.addTool=self.add_user_tool('add', 9, addpointBmp, True, 'Add a Point')     
         self.oneTool = self.add_user_tool('selectone', 10, oneBmp, True, 'Choose pointLine2D 1') 
         self.twoTool = self.add_user_tool('selecttwo', 11, twoBmp, True, 'Choose pointLine2D 2')
         
-        self.AddSeparator()
-        self.AddSeparator()
         
         #add the simple button click tools
         #self.leftcorrTool=self.AddSimpleTool(self.ON_CORR_LEFT,leftcorrBmp,'do something with correlation','correlation baby!') 
         self.deleteTool=self.AddSimpleTool(self.ON_DELETE_SELECTED,trashBmp,'Delete selected points','delete points') 
-        self.deleteImg=self.AddSimpleTool(self.ON_DELETE_IMG,trashBmp,'Delete selected image','delete img')
         self.corrTool=self.AddSimpleTool(self.ON_CORR,corrBmp,'Ajdust pointLine2D 2 with correlation','corrTool') 
         self.stepTool=self.AddSimpleTool(self.ON_STEP,stepBmp,'Take one step using points 1+2','stepTool')     
         self.ffTool=self.AddSimpleTool(self.ON_FF,ffBmp,'Auto-take steps till C<.3 or off image','fastforwardTool')       
-        self.loadimages=self.AddSimpleTool(self.ON_LOADIMG,ffBmp,'Load first image manually')
-        self.loadimages2=self.AddSimpleTool(self.ON_LOADIMG2,stepBmp,'Load second image manually')
-        self.nextimage=self.AddSimpleTool(self.ON_NEXT,corrBmp,'Acquire new images automatically')
-        self.nextimage=self.AddSimpleTool(self.ON_MANUAL_IMG,corrBmp,'Acquire new images manually without autofocus')
+
         #add the toggleable tools
         self.gridTool=self.AddCheckTool(self.ON_GRID,gridBmp,wx.NullBitmap,'toggle rotate boxes')
         #self.finetuneTool=self.AddSimpleTool(self.ON_FINETUNE,smalltargetBmp,'auto fine tune positions','finetuneTool')  
         #self.redrawTool=self.AddSimpleTool(self.ON_REDRAW,smalltargetBmp,'redraw canvas','redrawTool')  
         self.rotateTool=self.AddCheckTool(self.ON_ROTATE,rotateBmp,wx.NullBitmap,'toggle rotate boxes')
         #self.AddSimpleTool(self.ON_ROTATE,rotateBmp,'toggle rotate mosaic boxes according to rotation','rotateTool')
+
+        self.AddSeparator()
+        self.AddSeparator()
         
+        #Micromanager buttons
+        self.selectImg=self.add_user_tool('selectImg',22,selectImgBmp,True,'Add Nearest Image to selection')
+        self.deleteImg=self.AddSimpleTool(self.ON_DELETE_IMG,deleteImgBmp,'Delete selected image','delete img')
+        self.loadimages=self.AddSimpleTool(self.ON_LOADIMG,addOneBmp,'Load first image manually')
+        self.loadimages2=self.AddSimpleTool(self.ON_LOADIMG2,addTwoBmp,'Load second image manually')
+        self.nextimage=self.AddSimpleTool(self.ON_NEXT,runBmp,'Acquire new images automatically')
+        self.manualimage=self.AddSimpleTool(self.ON_MANUAL_IMG,manualBmp,'Acquire new images manually without autofocus')
+        
+
+        self.AddSeparator()
+        self.AddSeparator()
       
         #setup the controls for the mosaic
         self.showmagCheck = wx.CheckBox(self)
@@ -212,10 +236,10 @@ class MosaicToolbar(NavBarImproved):
         wx.EVT_TOOL(self, self.ON_CORR, self.canvas.OnCorrTool)        
         wx.EVT_TOOL(self, self.ON_STEP, self.canvas.OnStepTool)           
         wx.EVT_TOOL(self, self.ON_FF, self.canvas.OnFastForwardTool)
-        wx.EVT_TOOL(self, self.ON_LOADIMG, self.canvas.ButtonLoad) ################################################ for loading first image
-        wx.EVT_TOOL(self, self.ON_LOADIMG2, self.canvas.ButtonLoad2) ################################################ for loading second image
-        wx.EVT_TOOL(self, self.ON_NEXT, self.canvas.NextImage) #################################################### for loading next images automatically
-        wx.EVT_TOOL(self, self.ON_MANUAL_IMG, self.canvas.Manual_Img) #################################################### for loading next images automatically
+        wx.EVT_TOOL(self, self.ON_LOADIMG, self.canvas.ButtonLoad) ####### for loading first image
+        wx.EVT_TOOL(self, self.ON_LOADIMG2, self.canvas.ButtonLoad2) #######for loading second image
+        wx.EVT_TOOL(self, self.ON_NEXT, self.canvas.NextImage) ######### for loading next images automatically
+        wx.EVT_TOOL(self, self.ON_MANUAL_IMG, self.canvas.Manual_Img) ######for loading next images automatically
         wx.EVT_TOOL(self, self.ON_GRID, self.canvas.OnGridTool)
         #wx.EVT_TOOL(self, self.ON_FINETUNE, self.canvas.OnFineTuneTool)
         #wx.EVT_TOOL(self, self.ON_REDRAW, self.canvas.OnRedraw)
@@ -309,7 +333,7 @@ class MosaicPanel(FigureCanvas):
         self.tile_height = 1040
         self.tile_width = 1380
 
-        ########MOVE TO mosaicImage eventually, SETUP PREVIOUS Z LIST
+        #######SETUP PREVIOUS Z LIST, needs more testing, can use for focal plane correction possibly
         self.prevZ=[]
 
         self.canvas.mpl_connect('button_press_event', self.on_press)
@@ -383,26 +407,12 @@ class MosaicPanel(FigureCanvas):
                     if (mode == 'selectImg'):
                         try:
                             (img,zpos,extent) = self.mosaicImage.findHighResImageFile(evt.xdata,evt.ydata)
-                            print img, extent
-##                            if not evt.key=='shift':
-                            #select only current select
-                            print "solo"
-##                            print "solo keys",self.selected_imgs.keys()
-##                            if img not in self.selected_imgs.keys():
-                            print "tr"
-                            print self.selected_imgs
                             try:
                                 self.img_box.set_visible(False)
                             except:
-                                print "first time"
-                            self.selected_imgs = [img,extent]
-##                            elif evt.key=='shift':
-##                                #add to list
-##                                print "shift"
-##                                print "shift keys",self.selected_imgs.keys()
-##                                if img not in self.selected_imgs.keys():
-##                                    print "tr2"
-##                                    self.selected_imgs[img] = extent
+                                pass
+                                #hack for the first use case
+                            self.selected_imgs = [img,extent]                           
                             print self.selected_imgs
                             self.img_highlight() #highlights/enables for deletion all images in selected_imgs
 
@@ -470,50 +480,63 @@ class MosaicPanel(FigureCanvas):
         img = self.selected_imgs[0]
         print img
 
-        print self.mosaicImage.imagefiles
+        #remove highlight
+        self.img_box.set_visible(False)
         self.mosaicImage.imagefiles.remove(img)
-        print self.mosaicImage.imagefiles
-        
-        #calculating new extent and padding
 
-        #first image in list
-        extent = MetadataHandler.LoadMetadata(self.mosaicImage.imagefiles[0])[0]
+        #removing image directory
+        img_directory = os.path.dirname(img)
+        print img_directory,"DIRECTORY"
+        shutil.rmtree(img_directory)
 
+        #make a copy of the imagefiles object to avoid aliasing        
+        old_imgfiles = self.mosaicImage.imagefiles[:]
+
+        #Build mosaic up from list
+        self.build_from_images(old_imgfiles)
         
-        #calculate extent of first tile again
-        extent = MetadataHandler.LoadMetadata(self.mosaicImage.imagefiles[0])[0]
-        (image,small_height,small_width)=self.Parent.LoadImage(self.mosaicImage.imagefiles[0],True) #scaling = yes
-        if len(self.mosaicImage.imagefiles) == 1:
-            #draw first image
-            print "Loading first image..."
-            self.Parent.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,self.mosaicImage.imagefiles[0],self.Parent.proj_folder,flipVert=self.Parent.flipvert.IsChecked())
-            self.Parent.mosaicCanvas.draw()
-            self.Parent.mosaicCanvas.setImageExtent(extent)
-    
-        else:
-            print "#########",self.mosaicImage.imagefiles
+
+    def build_from_images(self,old_imgfiles):
+        """
+        Builds mosaic and sets extent from a list of images
+        """
+
+        #calculate extent of first tile
+        extent = MetadataHandler.LoadMetadata(old_imgfiles[0])[0]
+        (image,small_height,small_width)=self.Parent.LoadImage(old_imgfiles[0],True) #scaling = yes
+
+        #draw first image
+        self.Parent.mosaicCanvas.loadImage(image.getdata(),small_height,small_width,old_imgfiles[0],self.Parent.proj_folder,flipVert=self.Parent.flipvert.IsChecked())
+        self.Parent.mosaicCanvas.draw()
+        self.Parent.mosaicCanvas.setImageExtent(extent)
+        if len(old_imgfiles) == 1:
+            return
+        
+        #if more than one left
+        #second image, special loading sequence
+        first_image = old_imgfiles[0]
+        extent = self.mosaicImage.imageExtents[first_image] #grab the first image extent
+        extent2 = self.mosaicImage.extendMosaicTiff(self.Parent.LoadImage(first_image)[0],old_imgfiles[1],self.Parent.LoadImage(old_imgfiles[1],True)[0],extent,self.Parent.scaling) #scaling only low res param
+
+        #draw new image
+        (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False) #no scaling here, already scaled        
+        self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
+        self.Parent.mosaicCanvas.draw()
+        self.Parent.mosaicCanvas.setImageExtent(extent2)
+        
+        #Rest of images
+        old_imgfiles = old_imgfiles[2:]
+        for i in range(len(old_imgfiles)):
+            mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)[0]
+            extent2 = self.mosaicImage.extendMosaicTiff(mosaic,old_imgfiles[i],self.Parent.LoadImage(old_imgfiles[i],True)[0],extent2,self.Parent.scaling)
             
-            for i in range(len(self.mosaicImage.imagefiles)):
-                print i,self.mosaicImage.imagefiles[i],"IMAGE"
-                mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)[0]
-                extent2 = self.mosaicImage.extendMosaicTiff(mosaic,self.mosaicImage.imagefiles[i],self.Parent.LoadImage(self.mosaicImage.imagefiles[i],True)[0],extent,self.Parent.scaling)
-                print extent2
-                
             #draw new image SHOULD IT BE FROM FILE OR FROM MEMORY?
             (image,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'),False)
-
             self.mosaicImage.updateImageCenter(np.reshape(np.array(image.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
+
             self.Parent.mosaicCanvas.draw()
             self.Parent.mosaicCanvas.setImageExtent(extent2)
-       
-        directory = os.path.dirname(img)
-        print directory,"end of this shiz"
-        #DELETE AFTER YOU REDO THE MOSAIC
-        #shutil.rmtree(directory)
-        #ALSO REMOVE THE IMG HIGHLIGHT
-        #TEST MORE, DOESN'T WORK SECOND/MAYBE FIRST TIME...
-        
-
+            
     def img_highlight(self):
         """
         highlight selected images marked for deletion.
@@ -521,7 +544,6 @@ class MosaicPanel(FigureCanvas):
         x,y = self.selected_imgs[1][0],self.selected_imgs[1][2]
         scaling = self.Parent.scaling
         width,height = self.tile_width*.6,self.tile_height*.6 #GENERALIZE THIS
-        print x,y,width,height
         self.img_box = Rectangle((x,y), width, height,fill=False,edgecolor='c')
         self.mosaicImage.axis.add_patch(self.img_box)
         
@@ -652,7 +674,6 @@ class MosaicPanel(FigureCanvas):
         
     def setImageExtent(self,extent):
         if not self.mosaicImage==None:
-##            print extent
             self.mosaicImage.set_extent(extent)
             self.draw()
         
@@ -670,7 +691,7 @@ class MosaicPanel(FigureCanvas):
         (corrval,dxy_um)=self.mosaicImage.align_by_correlation((self.posList.pos1.x,self.posList.pos1.y),(self.posList.pos2.x,self.posList.pos2.y),window,delta,1)
         (dx_um,dy_um)=dxy_um
         
-        self.posList.pos2.shiftPosition(dx_um,dy_um) #watch out for this shi(f)t.. gets weird
+        self.posList.pos2.shiftPosition(dx_um,dy_um) #watch out for this shift.. gets weird
         #self.draw()
         return corrval
           
@@ -728,9 +749,7 @@ class MosaicPanel(FigureCanvas):
         tif_filename)a string containing the path pointing to the full resolution version of the image
         
         """
-##        print np.array(imagedata,np.dtype('uint16')).shape,(height,width)
         imagematrix=np.reshape(np.array(imagedata,np.dtype('uint16')),(height,width))
-##        print extent
         try:
             proj_folder = self.Parent.proj_folder
         except:
@@ -772,8 +791,15 @@ class MosaicPanel(FigureCanvas):
 
     def ButtonLoad(self,evt="None"):
 
-        #PUT THIS IN POSLIST LATER
-##        self.z_positions = collections.OrderedDict()
+        #check if tile folder exists
+        try:
+            new_tiles = os.path.join(self.Parent.proj_folder,'new_tiles')
+        except AttributeError:
+            print "Please create or load a project directory first"
+            return
+        if not os.path.exists(new_tiles):
+            os.mkdir('new_tiles')
+            print "making new_tiles dir, THIS SHOULDN'T HAPPEN!"
         
         #grab first image from microscope
         (steps,rough_size,fine_size) = self.Parent.focus_params
@@ -784,16 +810,9 @@ class MosaicPanel(FigureCanvas):
         MM_AT.setExposure(self.Parent.exposure)
         (pos,score,im) = Acq.get(orig_pos,True,steps,rough_size,fine_size)
         
-        #check if tile folder exists
-        new_tiles = os.path.join(self.Parent.proj_folder,'new_tiles')
-        if not os.path.exists(new_tiles):
-            os.mkdir('new_tiles')
-            print "making new_tiles dir, THIS SHOULDN'T HAPPEN!"
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
-##        self.z_positions[str((x,y))] = z
-##        print self.z_positions
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -1273,6 +1292,7 @@ class ZVISelectFrame(wx.Frame):
             path=default_proj,name='projectFolderPickerCtrl1',
             style=wx.FLP_USE_TEXTCTRL,size=wx.Size(300,100))
         self.proj_folderpicker.SetPath(default_proj)
+        self.folder_load_button=wx.Button(self,id=wx.ID_ANY,label="Load",name="project load")
         self.folder_create_button=wx.Button(self,id=wx.ID_ANY,label="Create",name="folder create")
 
         #define the microscope configuration file picker
@@ -1287,6 +1307,7 @@ class ZVISelectFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnImageLoad,self.image_load_button)
         self.Bind(wx.EVT_BUTTON, self.OnMetaLoad,self.meta_load_button)
         self.Bind(wx.EVT_BUTTON, self.OnProjCreate,self.folder_create_button)
+        self.Bind(wx.EVT_BUTTON, self.OnProjLoad,self.folder_load_button)
         self.Bind(wx.EVT_BUTTON, self.OnConfLoad,self.config_load_button)
         self.Bind(wx.EVT_BUTTON, self.OnEditImageMetadata,self.meta_enter_button)
         
@@ -1326,7 +1347,8 @@ class ZVISelectFrame(wx.Frame):
         #define a horizontal sizer for them and place the folder picker components in there
         self.proj_folderpickersizer=wx.BoxSizer(wx.HORIZONTAL)
         self.proj_folderpickersizer.Add(self.proj_label,0,wx.EXPAND)
-        self.proj_folderpickersizer.Add(self.proj_folderpicker,1,wx.EXPAND)        
+        self.proj_folderpickersizer.Add(self.proj_folderpicker,1,wx.EXPAND)
+        self.proj_folderpickersizer.Add(self.folder_load_button,0,wx.EXPAND)
         self.proj_folderpickersizer.Add(self.folder_create_button,0,wx.EXPAND)
 
         #define a horizontal sizer for them and place the folder picker components in there
@@ -1618,18 +1640,72 @@ class ZVISelectFrame(wx.Frame):
     def OnProjCreate(self,event="none"):
         """
         event handler for handling the Create button press. Creates subfolder called
-        new_tiles where acquired images will be stored
+        new_tiles where acquired images will be stored. Alternatively, if a directory already exists in
+        the specified location, the project directory is simply set to said location.
         """
         self.proj_folder = self.proj_folderpicker.GetPath()
         if not os.path.exists(os.path.join(self.proj_folder,'new_tiles')):
             print "creating project folder"
             os.mkdir(os.path.join(self.proj_folder,'new_tiles'))
         else:
-            print "folder already exists, can implement projecy loading here, but for now just sets dir?"
+            print "folder already exists, project directory set here. Previous projects in this directory \n\
+                    will not affect your current project. However, if you try to load this project, it will\n\
+                    load ALL files in the new_tiles directory including files from previous projects."
 
         #Toggle global MM_FLAG on, signals that and MM project is being worked on
         self.MM_FLAG = True
-             
+        
+    def OnProjLoad(self,event="none"):
+        """
+        event handler for handling the Load button press. Loads project images and creates mosaic +
+        extent.
+        """
+        main_path = self.proj_folderpicker.GetPath()
+        tile_path = os.path.join(main_path,'new_tiles')
+        try:
+            first_img = os.path.join(tile_path,os.listdir(tile_path)[0])
+        except:
+            print "No new_tiles folder found"
+            return
+        
+        metadata=os.path.join(first_img,'metadata.txt')
+        image=os.path.join(first_img,'*.tif')
+        
+        check_paths = [main_path,os.path.join(main_path,'mosaic.tif'),
+                       tile_path,first_img,metadata]
+
+        for d in check_paths:
+            if not os.path.exists(d):
+                print "couldn't find ",d
+                return
+
+        #check for an image                        
+        if not glob.glob(os.path.join(first_img,'*.tif')):
+            print "Couldn't find an image in the new_tiles directory"
+            return
+
+        
+        #grab images from new_tiles subdirectories
+        self.MM_FLAG = True
+        new_tiles_sub = os.listdir(tile_path)
+        img_lst=[]
+        for sub in new_tiles_sub:
+            img = os.path.join(tile_path,sub,"img_"+sub+"_.tif")
+            print img
+            if os.path.exists(img):
+                img_lst.append(img)
+            else:
+                print img
+                print "DIDN'T WORk"
+                return
+
+        #set project folder    
+        self.proj_folder = self.proj_folderpicker.GetPath()            
+        print "All necessary files found, loading project..."
+    
+        #build project
+        self.mosaicCanvas.build_from_images(img_lst)
+        
     def ToggleRelativeMotion(self,event):
         """event handler for handling the toggling of the relative motion"""  
         if self.relative_motion.IsChecked():

@@ -214,7 +214,7 @@ class MosaicImage():
         im.paste(tile,(int(abs((px2[1]-maxx/.6)*scaling)),int(abs((px2[3]-maxy/.6)*scaling))))
 
         im.save(os.path.join(self.proj_folder,'mosaic.tif'))
-       
+
         return im,extent
         
     def extendMosaicTiff(self, mosaic, image_file_name, low_res_image_array, old_extent,scaling):
