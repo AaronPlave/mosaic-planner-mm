@@ -1,0 +1,429 @@
+LOG(2013-07-30T14:18:42.281250, 5408, 00252398:): -------->>
+LOG(2013-07-30T14:18:42.281250, 5408, 00252398:): Core session started on 2013-07-30T14:18:42.281250 by Administrator on CZYK8P
+LOG(2013-07-30T14:18:42.281250, 5408, 00252398:): Debug logging disabled
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device COM1 loaded from SerialManager and labeled as COM1
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device COM2 loaded from SerialManager and labeled as COM2
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device COM3 loaded from SerialManager and labeled as COM3
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device COM4 loaded from SerialManager and labeled as COM4
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device Zeiss AxioCam loaded from AxioCam and labeled as Zeiss AxioCam
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device Zeiss AxioCam set as default camera.
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device ZeissScope loaded from ZeissCAN29 and labeled as ZeissScope
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device ZeissReflectorTurret loaded from ZeissCAN29 and labeled as ZeissReflectorTurret
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device ZeissObjectiveTurret loaded from ZeissCAN29 and labeled as ZeissObjectiveTurret
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device ZeissFocusAxis loaded from ZeissCAN29 and labeled as ZeissFocusAxis
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device ZeissXYStage loaded from ZeissCAN29 and labeled as ZeissXYStage
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device ZeissXYStage set as default xyStage.
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device ZeissReflectedLightShutter loaded from ZeissCAN29 and labeled as ZeissReflectedLightShutter
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Device ZeissReflectedLightShutter set as default shutter.
+LOG(2013-07-30T14:18:46.796875, 5408, 00252398:): Starting initialization sequence for 11 devices...
+LOG(2013-07-30T14:18:46.812500, 5408, 00252398:): Device COM1 initialized.
+LOG(2013-07-30T14:18:46.812500, 5408, 00252398:): Device COM2 initialized.
+LOG(2013-07-30T14:18:46.812500, 5408, 00252398:): Device COM3 initialized.
+LOG(2013-07-30T14:18:46.812500, 5408, 00252398:): Device COM4 initialized.
+LOG(2013-07-30T14:18:47.109375, 5408, 00252398:): Device Zeiss AxioCam initialized.
+LOG(2013-07-30T14:18:47.125000, 5408, 00252398:): Device ZeissScope message: Initializing Hub
+LOG(2013-07-30T14:18:47.140625, 5408, 00252398:): Device ZeissScope message: Microscope type Detected: AxioObserver
+LOG(2013-07-30T14:18:47.140625, 5408, 00252398:): Device ZeissScope message: Application version: 
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 1, group: a1
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 2, group: a1
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: e, group: a1
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: f, group: a3
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 1d, group: a1
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 1e, group: a1
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 1f, group: a1
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 26, group: a3
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 27, group: a3
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 29, group: a2
+LOG(2013-07-30T14:18:47.531250, 5408, 00252398:): Device ZeissScope message: Found device: 50, group: a1
+LOG(2013-07-30T14:18:47.609375, 5408, 00252398:): Device ZeissScope message: Device 1 has 10 positions and is now at position 1
+LOG(2013-07-30T14:18:47.671875, 5408, 00252398:): Device ZeissScope message: Device 2 has 6 positions and is now at position 1
+LOG(2013-07-30T14:18:47.937500, 5408, 00252398:): Device ZeissScope message: Time out in answer.  Read so far: 
+LOG(2013-07-30T14:18:47.984375, 5408, 00252398:): Device ZeissScope message: Device e has 0 positions and is now at position 1
+LOG(2013-07-30T14:18:48.140625, 5408, 00252398:): Device ZeissScope message: Device f has 25000000 positions and is now at position 587639
+LOG(2013-07-30T14:18:48.140625, 5408, 00252398:): Device ZeissScope message: 
+Scale: native
+LOG(2013-07-30T14:18:48.140625, 5408, 00252398:): Device ZeissScope message: 
+Scale: native
+Scale: nm
+Native: -25000000 non-Native: -2.90087e-034
+Native: 25000000 non-Native: 1.56009e+034
+LOG(2013-07-30T14:18:48.203125, 5408, 00252398:): Device ZeissScope message: Device 1d has 2 positions and is now at position 1
+LOG(2013-07-30T14:18:48.296875, 5408, 00252398:): Device ZeissScope message: Device 1e has 2 positions and is now at position 1
+LOG(2013-07-30T14:18:48.390625, 5408, 00252398:): Device ZeissScope message: Device 1f has 2 positions and is now at position 1
+LOG(2013-07-30T14:18:48.484375, 5408, 00252398:): Device ZeissScope message: Device 26 has 50000000 positions and is now at position -8620250
+LOG(2013-07-30T14:18:48.484375, 5408, 00252398:): Device ZeissScope message: 
+Scale: native
+LOG(2013-07-30T14:18:48.562500, 5408, 00252398:): Device ZeissScope message: Device 27 has 50000000 positions and is now at position 2527000
+LOG(2013-07-30T14:18:48.562500, 5408, 00252398:): Device ZeissScope message: 
+Scale: native
+LOG(2013-07-30T14:18:48.687500, 5408, 00252398:): Device ZeissScope message: Device 29 has 1024 positions and is now at position 1
+LOG(2013-07-30T14:18:48.687500, 5408, 00252398:): Device ZeissScope message: 
+Scale: native
+LOG(2013-07-30T14:18:48.687500, 5408, 00252398:): Device ZeissScope message: 
+Scale: native
+Scale: Volt
+Native: 1 non-Native: 0
+Native: 512 non-Native: 6.1
+Native: 1024 non-Native: 12.2
+LOG(2013-07-30T14:18:48.984375, 5408, 00252398:): Device ZeissScope message: Time out in answer.  Read so far: 
+LOG(2013-07-30T14:18:48.984375, 5408, 00252398:): Device ZeissScope message: Device 50 has 1024 positions and is now at position 0
+LOG(2013-07-30T14:18:50.062500, 5408, 00252398:): Device ZeissScope message: Bios version of Colibri is: 02.003
+LOG(2013-07-30T14:18:50.062500, 5408, 00252398:): Device ZeissScope message: LEDs: 
+LED-Module 365nm     365nm +-8nm, 700mA, serial:  orderID: 
+LED-Module 470nm     470nm +-25nm, 850mA, serial:  orderID: 
+LED-Module 530nm     530nm +-38nm, 850mA, serial:  orderID: 
+LED-Module 625nm     625nm +-17nm, 700mA, serial:  orderID: 
+
+LOG(2013-07-30T14:18:50.437500, 5408, 00252398:): Device ZeissScope message: Reflectors: 
+1-49 DAPI
+2-44 FITC
+3-43 DsRed
+4-50 Cy 5
+5- 
+6-DIC TL
+7- 
+8- 
+9- 
+10- 
+LOG(2013-07-30T14:18:50.656250, 5408, 00252398:): Device ZeissScope message: Objectives: 
+1-Plan-Apochromat 10x/0.45 M27
+2-Plan-Apochromat 20x/0.8 M27
+3-Plan-Apochromat 63x/1.40 Oil M27
+4-40x/1.4h
+5-Plan-Neofluar 40x/1.30 Oil Ph 3
+6-LCI Plan-Neofluar 25x/0.8 Imm Korr DIC M27
+LOG(2013-07-30T14:18:50.656250, 5408, 00252398:): Device ZeissScope message: TubeLens: 
+LOG(2013-07-30T14:18:50.656250, 5408, 00252398:): Device ZeissScope message: SidePort: 
+LOG(2013-07-30T14:18:50.656250, 5408, 00252398:): Device ZeissScope message: Condenser: 
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissScope initialized.
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectorTurret message: GetModel Position is reporting position 1 for device with ID: 1
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectorTurret message: GetModel Position is reporting position 1 for device with ID: 1
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectorTurret message: GetModel Position is reporting position 1 for device with ID: 1
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectorTurret message: GetModel Position is reporting position 1 for device with ID: 1
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectorTurret initialized.
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissObjectiveTurret message: GetModel Position is reporting position 1 for device with ID: 2
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissObjectiveTurret message: GetModel Position is reporting position 1 for device with ID: 2
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissObjectiveTurret message: GetModel Position is reporting position 1 for device with ID: 2
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissObjectiveTurret message: GetModel Position is reporting position 1 for device with ID: 2
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissObjectiveTurret initialized.
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissFocusAxis message: GetModel Position is reporting position 587639 for device with ID: f
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissFocusAxis initialized.
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissXYStage initialized.
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectedLightShutter message: GetModel Position is reporting position 1 for device with ID: 1d
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectedLightShutter message: GetModel Position is reporting position 1 for device with ID: 1d
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectedLightShutter initialized.
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Camera device set to Zeiss AxioCam
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Focus device set to ZeissFocusAxis
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Auto shutter ON.
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectorTurret message: GetModel Position is reporting position 1 for device with ID: 1
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectorTurret message: GetModel Position is reporting position 1 for device with ID: 1
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissObjectiveTurret message: GetModel Position is reporting position 1 for device with ID: 2
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissObjectiveTurret message: GetModel Position is reporting position 1 for device with ID: 2
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissFocusAxis message: GetModel Position is reporting position 587639 for device with ID: f
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissReflectedLightShutter message: GetModel Position is reporting position 1 for device with ID: 1d
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): System state cache updated.
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:50.703125, 5408, 00252398:): Device ZeissFocusAxis message: GetModel Position is reporting position 587639 for device with ID: f
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissFocusAxis message: GetModel Position is reporting position 587639 for device with ID: f
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Auto shutter OFF.
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissReflectedLightShutter message: Setting device 1d to position 2 and Busy flag to true
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissFocusAxis message: GetModel Position is reporting position 587639 for device with ID: f
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:53.015625, 5408, 00252398:): Device ZeissFocusAxis message: GetModel Position is reporting position 587639 for device with ID: f
+LOG(2013-07-30T14:18:53.359375, 5408, 00252398:): Device ZeissReflectedLightShutter message: Setting device 1d to position 1 and Busy flag to true
+LOG(2013-07-30T14:18:53.359375, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:53.359375, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:53.359375, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position -8620250 for device with ID: 26
+LOG(2013-07-30T14:18:53.359375, 5408, 00252398:): Device ZeissXYStage message: GetModel Position is reporting position 2527000 for device with ID: 27
+LOG(2013-07-30T14:18:53.359375, 5408, 00252398:): Device ZeissFocusAxis message: GetModel Position is reporting position 587639 for device with ID: f
+LOG(2013-07-30T14:18:55.812500, 5408, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:19:10.437500, 5408, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:21:13.390625, 6228, 00252398:): -------->>
+LOG(2013-07-30T14:21:13.390625, 6228, 00252398:): Core session started on 2013-07-30T14:21:13.390625 by Administrator on CZYK8P
+LOG(2013-07-30T14:21:13.390625, 6228, 00252398:): Debug logging disabled
+LOG(2013-07-30T14:21:16.500000, 6228, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:22:09.437500, 5388, 00252398:): -------->>
+LOG(2013-07-30T14:22:09.437500, 5388, 00252398:): Core session started on 2013-07-30T14:22:09.437500 by Administrator on CZYK8P
+LOG(2013-07-30T14:22:09.437500, 5388, 00252398:): Debug logging disabled
+LOG(2013-07-30T14:22:11.234375, 5388, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:22:20.343750, 7024, 00252398:): -------->>
+LOG(2013-07-30T14:22:20.343750, 7024, 00252398:): Core session started on 2013-07-30T14:22:20.343750 by Administrator on CZYK8P
+LOG(2013-07-30T14:22:20.343750, 7024, 00252398:): Debug logging disabled
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ AxioCam
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Starting initialization sequence for 0 devices...
+LOG(2013-07-30T14:22:33.843750, 7024, 00252398:): Auto shutter ON.
+LOG(2013-07-30T14:22:44.312500, 7024, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:22:48.062500, 7332, 00252398:): -------->>
+LOG(2013-07-30T14:22:48.062500, 7332, 00252398:): Core session started on 2013-07-30T14:22:48.062500 by Administrator on CZYK8P
+LOG(2013-07-30T14:22:48.062500, 7332, 00252398:): Debug logging disabled
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ AxioCam
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.750000, 7332, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:22:51.765625, 7332, 00252398:): Starting initialization sequence for 0 devices...
+LOG(2013-07-30T14:22:51.765625, 7332, 00252398:): Auto shutter ON.
+LOG(2013-07-30T14:22:55.281250, 7332, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:23:07.468750, 6672, 00252398:): -------->>
+LOG(2013-07-30T14:23:07.468750, 6672, 00252398:): Core session started on 2013-07-30T14:23:07.468750 by Administrator on CZYK8P
+LOG(2013-07-30T14:23:07.468750, 6672, 00252398:): Debug logging disabled
+LOG(2013-07-30T14:23:09.093750, 6672, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:23:09.093750, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.093750, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.093750, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.093750, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ AxioCam
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Starting initialization sequence for 0 devices...
+LOG(2013-07-30T14:23:09.109375, 6672, 00252398:): Auto shutter ON.
+LOG(2013-07-30T14:23:10.500000, 6672, 00252398:): All devices unloaded.
+LOG(2013-07-30T14:23:42.015625, 604, 00250288:): -------->>
+LOG(2013-07-30T14:23:42.015625, 604, 00250288:): Core session started on 2013-07-30T14:23:42.015625 by Administrator on CZYK8P
+LOG(2013-07-30T14:23:42.015625, 604, 00250288:): Debug logging disabled
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): All devices unloaded.
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ AxioCam
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.250000, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.265625, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.265625, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.265625, 604, 00250288:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T14:23:50.265625, 604, 00250288:): Starting initialization sequence for 0 devices...
+LOG(2013-07-30T14:23:50.265625, 604, 00250288:): Auto shutter ON.
+LOG(2013-07-30T18:53:03.200268, 900, 00252398:): -------->>
+LOG(2013-07-30T18:53:03.200268, 900, 00252398:): Core session started on 2013-07-30T18:53:03.200268 by Administrator on CZYK8P
+LOG(2013-07-30T18:53:03.200268, 900, 00252398:): Debug logging disabled
+LOG(2013-07-30T18:53:05.294018, 900, 00252398:): All devices unloaded.
+LOG(2013-07-30T18:57:53.215893, 6584, 00252398:): -------->>
+LOG(2013-07-30T18:57:53.215893, 6584, 00252398:): Core session started on 2013-07-30T18:57:53.215893 by Administrator on CZYK8P
+LOG(2013-07-30T18:57:53.215893, 6584, 00252398:): Debug logging disabled
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): All devices unloaded.
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ SerialManager
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ AxioCam
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.887768, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.903393, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.903393, 6584, 00252398:): Error occurred. Device MMCore::loadDevice. The specified module could not be found.
+ ZeissCAN29
+Unable to load library: file not accessible or corrupted.
+
+LOG(2013-07-30T18:57:55.903393, 6584, 00252398:): Starting initialization sequence for 0 devices...
+LOG(2013-07-30T18:57:55.903393, 6584, 00252398:): Auto shutter ON.
+LOG(2013-07-30T18:57:59.450268, 6584, 00252398:): All devices unloaded.
+LOG(2013-07-30T19:00:38.215893, 7008, 00250288:): -------->>
+LOG(2013-07-30T19:00:38.215893, 7008, 00250288:): Core session started on 2013-07-30T19:00:38.215893 by Administrator on CZYK8P
+LOG(2013-07-30T19:00:38.215893, 7008, 00250288:): Debug logging disabled
+LOG(2013-07-30T19:00:39.840893, 7008, 00250288:): All devices unloaded.
+LOG(2013-07-30T19:23:46.340893, 7908, 00250288:): -------->>
+LOG(2013-07-30T19:23:46.340893, 7908, 00250288:): Core session started on 2013-07-30T19:23:46.340893 by Administrator on CZYK8P
+LOG(2013-07-30T19:23:46.340893, 7908, 00250288:): Debug logging disabled
+LOG(2013-07-30T19:23:57.387768, 7908, 00250288:): All devices unloaded.
