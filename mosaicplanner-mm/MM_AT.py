@@ -1,11 +1,16 @@
-#Micromanager Array Tomography
+#Main Micromanager interface for MosaicPlanner
 
+#imports the python wrapper for the Micromanager core
 import MMCorePy
+
+#starts an instance of the core
 mmc = MMCorePy.CMMCore()
+
 info = mmc.getVersionInfo()
 print info,"\n"
 
 def loadsysconf(conf):
+     """Loads a MM microscope configuration file""" 
      mmc.loadSystemConfiguration(conf)
 
 def setExposure(exposure_ms):
@@ -19,7 +24,7 @@ def snapImage():
     height = mmc.getImageHeight()
     return image,width,height
     
-#Properties
+
 def get_property(prop,element='Zeiss Axiocam'): #prop like binning
     try:
         return mmc.getProperty(element,prop)
@@ -45,7 +50,8 @@ def print_suppported_properties(element="Core"):
     for i in proplst:
         values = mmc.getAllowedPropertyValues("Core",i)
         print i,values
-
+        
+#might want to add wait for device in these set* functions
 def setZ(z):
     mmc.setPosition("ZeissFocusAxis",z)
 
@@ -64,23 +70,12 @@ def setAutoShutter(arg):
 def setShutter(arg):
      mmc.setShutterOpen(arg)
 
+def getPixelSizeUm():
+     return mmc.getPixelSizeUm()
+
 def unload_devices():
+     """Must call this at the end of each session or else the devices will
+     remain read-only until the process is terminated"""
      mmc.unloadAllDevices()
 
-
-#set filter, shutter,etc. = mmc.setState("F1",3) or
-    #mmc.setProperty("Camera", "Exposure", "55.0")
-#mmc.setProperty("ZeissReflectedLightShutter","State","0") - shutter close
-##mmc.setXYPosition("ZeissXYStage",0.00,0.00) #set position
-####print mmc.getXYPosition("ZeissXYStage")
-##import time
-##time.sleep(2)
-##mmc.setXYPosition("ZeissXYStage",2.00,3.00) #set position
-####print mmc.getXYPosition("ZeissXYStage")
-##
-##time.sleep(2)
-##mmc.setXYPosition("ZeissXYStage",100.00,50.00) #set position
-####print mmc.getXYPosition("ZeissXYStage")
-##time.sleep(2)
-##mmc.setXYPosition("ZeissXYStage",100.00,50.00) #set position
-
+#'Micro-Manager-1.4_nightly.cfg'

@@ -40,7 +40,7 @@ from Transform import Transform,ChangeTransform
 from xml.dom.minidom import parseString
 import wx
 import MetadataHandler
-import MM_AT  #_MOD #as MM_AT
+import MM_AT
 import time
 import json
 import img as Acq
@@ -48,7 +48,7 @@ import collections
 import sys
 import shutil
 import glob
-import Image #chANGE TO from PIL import Image -for 64 bit sometimes
+import Image #change to *from PIL import Image* --for 64 bit, can fix certain *cannot open file* issues sometimes
 from matplotlib.patches import Rectangle
 
 
@@ -543,7 +543,8 @@ class MosaicPanel(FigureCanvas):
         """
         x,y = self.selected_imgs[1][0],self.selected_imgs[1][2]
         scaling = self.Parent.scaling
-        width,height = self.tile_width*.6,self.tile_height*.6 #GENERALIZE THIS
+        px_Um = self.Parent.PxSizeUm
+        width,height = self.tile_width*px_Um,self.tile_height*px_Um
         self.img_box = Rectangle((x,y), width, height,fill=False,edgecolor='c')
         self.mosaicImage.axis.add_patch(self.img_box)
         
@@ -691,7 +692,7 @@ class MosaicPanel(FigureCanvas):
         (corrval,dxy_um)=self.mosaicImage.align_by_correlation((self.posList.pos1.x,self.posList.pos1.y),(self.posList.pos2.x,self.posList.pos2.y),window,delta,1)
         (dx_um,dy_um)=dxy_um
         
-        self.posList.pos2.shiftPosition(dx_um,dy_um) #watch out for this shift.. gets weird
+        self.posList.pos2.shiftPosition(dx_um,dy_um) #watch out for this shift.. gets weird depending on how you have your axes/extents (i.e. + or - )
         #self.draw()
         return corrval
           
@@ -747,14 +748,23 @@ class MosaicPanel(FigureCanvas):
         extent) a list [minx,maxx,miny,maxy] of the corners of the image.  This will specify the scale of the image, and allow the corresponding point functionality
         to specify how much the movable point should be shifted in the units given by this extent. (default=None)
         tif_filename)a string containing the path pointing to the full resolution version of the image
-        
+        proj_folder)a string containing the MM project folder name
         """
         imagematrix=np.reshape(np.array(imagedata,np.dtype('uint16')),(height,width))
         try:
             proj_folder = self.Parent.proj_folder
         except:
             proj_folder = None
-        self.mosaicImage=MosaicImage(self.subplot,self.posone_plot,self.postwo_plot,self.corrplot,tif_filename,imagematrix,proj_folder,extent,flipVert=flipVert)
+
+        try:
+            print "try"
+            print self.Parent.PxSizeUm
+            px_Um = self.Parent.PxSizeUm
+        except:
+            print "none"
+            px_Um = None
+            
+        self.mosaicImage=MosaicImage(self.subplot,self.posone_plot,self.postwo_plot,self.corrplot,tif_filename,imagematrix,proj_folder,extent,px_Um,flipVert=flipVert)
        
         #self.get_toolbar().sliderMinCtrl.SetValue(int(self.mosaicImage.imagematrix.min(axis=None)))
         self.get_toolbar().sliderMaxCtrl.SetValue(int(self.mosaicImage.imagematrix.max(axis=None)))
@@ -768,29 +778,12 @@ class MosaicPanel(FigureCanvas):
         img8 = Image.fromarray(array8)
         
         return img8
-    
-    def newImage(self,old_extent,filename):
-        #this is a temporary test function since for the actual run there will only be 2 images
-        #in the beginning and the rest will be acquired on the fly
-
-        #get new image with attributes
-        (image,small_height,small_width)=self.Parent.LoadImage(filename,False)
-
-        #set extent
-        old_mosaic = self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'))
-        new_extent = self.mosaicImage.extendMosaicTiff(old_mosaic[0],filename,image,old_extent,self.Parent.scaling)
-
-        (new_mosaic,small_height,small_width)=self.Parent.LoadImage(os.path.join(self.Parent.proj_folder,'mosaic.tif'))
-        new_mosaic = self.sixteen2eight(new_mosaic)
-        
-        #update canvas
-        self.mosaicImage.updateImageCenter(np.reshape(np.array(new_mosaic.getdata(),np.dtype('uint16')),(small_height,small_width)),self.mosaicImage.Image,self.mosaicImage.axis)
-        self.Parent.mosaicCanvas.draw()
-        self.Parent.mosaicCanvas.setImageExtent(new_extent)
-        return new_extent
 
     def ButtonLoad(self,evt="None"):
-
+        """
+        Loads first image. First checks for proj_folder, grabs image from scope, creates new dir for image + metadata,
+        loads and draws image + extent.
+        """
         #check if tile folder exists
         try:
             new_tiles = os.path.join(self.Parent.proj_folder,'new_tiles')
@@ -819,8 +812,8 @@ class MosaicPanel(FigureCanvas):
         f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
         im.save(f_out)
         
-        #write new image metadata to file, fix pixel size, currently not grabbing right 
-        width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
+        #write new image metadata to file
+        width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],self.Parent.PxSizeUm,pos[0],pos[1],pos[2]
         d = {"Summary":{"Width":width,"Height":height,
                         "PixelSize_um":Pxsize},
              "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
@@ -848,7 +841,11 @@ class MosaicPanel(FigureCanvas):
 
     
     def ButtonLoad2(self,evt="None"):
-        """After first image is manually grabbed, use this function to grab the second image"""
+        """
+        After first image is manually grabbed, use this function to grab the second image. Note that this button is different
+        from the first ButtonLoad since it uses extendMosaicTiff to extend the mosaic with the second image instead of simply
+        loading a single image.
+        """
         
         #grab second image from microscope
         (steps,rough_size,fine_size) = self.Parent.focus_params
@@ -875,8 +872,8 @@ class MosaicPanel(FigureCanvas):
         f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
         im.save(f_out)
         
-        #write new image metadata to file, fix pixel size, currently not grabbing right
-        width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
+        #write new image metadata to file
+        width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],self.Parent.PxSizeUm,pos[0],pos[1],pos[2]
         d = {"Summary":{"Width":width,"Height":height,
                         "PixelSize_um":Pxsize},
              "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
@@ -927,8 +924,8 @@ class MosaicPanel(FigureCanvas):
         f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
         img.save(f_out)
         
-        #write new image metadata to file, fix pixel size, currently not grabbing right 
-        width,height,Pxsize,Xpos,Ypos,Zpos = img.size[0],img.size[1],.6,x,y,z
+        #write new image metadata to file 
+        width,height,Pxsize,Xpos,Ypos,Zpos = img.size[0],img.size[1],self.Parent.PxSizeUm,x,y,z
         d = {"Summary":{"Width":width,"Height":height,
                         "PixelSize_um":Pxsize},
              "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
@@ -1105,8 +1102,8 @@ class MosaicPanel(FigureCanvas):
             f_out = os.path.join(newdir,'img_%s_.tif' % str_xyz)
             im.save(f_out)
             
-            #write new image metadata to file, fix pixel size, currently not grabbing right
-            width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],.6,pos[0],pos[1],pos[2]
+            #write new image metadata to file, fix pixel size
+            width,height,Pxsize,Xpos,Ypos,Zpos = im.size[0],im.size[1],self.Parent.PxSizeUm,pos[0],pos[1],pos[2]
             d = {"Summary":{"Width":width,"Height":height,
                             "PixelSize_um":Pxsize},
                  "Frame":{"XPositionUm":Xpos,"YPositionUm":Ypos,"ZPositionUm":Zpos}}   
@@ -1154,7 +1151,8 @@ class MosaicPanel(FigureCanvas):
         Generates box of surrounding tiles using pos2. Named p1 through p8, starting top left, going to the right and down a row, snake pattern (for now).
         """
         x,y = self.posList.pos2.x,self.posList.pos2.y
-        width_um,height_um = self.mosaicImage.originalwidth*.6,self.mosaicImage.originalheight*.6
+        px_Um = self.Parent.PxSizeUm
+        width_um,height_um = self.mosaicImage.originalwidth*px_Um,self.mosaicImage.originalheight*px_Um
 
         #points in stage coords (microns)
         p1 = (x - width_um, y + height_um)
@@ -1207,6 +1205,7 @@ class ZVISelectFrame(wx.Frame):
         self.win1 = 100
         self.win2 = 300
         self.win3 = 600
+        self.PxSizeUm = .65
 
             
         
@@ -1520,8 +1519,8 @@ class ZVISelectFrame(wx.Frame):
                 tiles.append(i)
         xpos = f[tiles[0]]["XPositionUm"]
         ypos = f[tiles[0]]["YPositionUm"]
-        ScaleFactorX= .6 #PixelSize_um??
-        ScaleFactorY= .6 #?
+        ScaleFactorX= self.PxSizeUm #PixelSize_um??
+        ScaleFactorY= self.PxSizeUm #?
         Width=f["Summary"]["Width"]
         Height=f["Summary"]["Height"]
         extent=[xpos-(Width/2)*ScaleFactorX,xpos+(Width/2)*ScaleFactorX,\
@@ -1628,6 +1627,8 @@ class ZVISelectFrame(wx.Frame):
         try:
             print "Loading MM config file"
             MM_AT.loadsysconf(filename)
+            self.PxSizeUm = MM_AT.getPixelSizeUm()
+            print self.PxSizeUm
             print "Successfully loaded config"
             print "Current stage position: ",MM_AT.getXYZ()
         except Exception,e:
@@ -1774,7 +1775,7 @@ class ZVISelectFrame(wx.Frame):
                                    settings=self.MMSettings)
         dlg.ShowModal()
         del self.MMSettings
-        #then do corrosponding stuff here..
+
         self.MMSettings=dlg.GetSettings()
 
         #set MM settings

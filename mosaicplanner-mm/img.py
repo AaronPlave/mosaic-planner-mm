@@ -14,6 +14,8 @@ def sixteen2eightB(img16):
     return img8
 
 
+### Waiting for devices to finish is generally iffy. Sometimes it works,
+### other times it doesn't. 
 
 def wait_Zstage(): #could also do a while getXYZ != target, pass?
 ##    while mmc.deviceBusy('ZeissFocusAxis'):
@@ -38,27 +40,12 @@ def get(pos,auto=False,steps=False,rough_size=False,fine_size=False): #hmm, have
         im = sixteen2eightB(snapImage())
         return im
 
-#THIS IS AN UNUSED FUNCTION
+#Unused function but could use for predicting next position, same as PosList guess
 def guess_next_linear(p1,p2): #eventually modify to include a real Z guess?
     dx,dy = p2[0]-p1[0],p2[1]-p1[1]
     p3 = (p2[0]+dx,p2[1]+dy,p2[2]) #just using last Z for current Z
-##    print p3,"p3 guess"
     return p3
 
-#TEST FUNCTION
-def main(num_pos):
-    setXY(p2[0],p2[1])
-
-    #All the positions
-    positions = [p1,p2]
-    
-    #and go!
-    for i in range(num_pos):
-        p3 = guess_next_linear(positions[-2],positions[-1])
-        get(p3,True)
-        positions.append(p3)
-        
-    return positions
 
 #DETERMINES SCORE OF IMAGE BASED ON MAX HISTOGRAM VALUE
 def sharpness(image):
@@ -71,7 +58,6 @@ def autofocus(pos,steps,rough_step,fine_step):
     """
     Basic autofocus, improve later, use MM if possible?
     """
-##    print "starting autofocus"
     start = time.clock()
     print "pos,steps,rough_step,fine_step = ",pos,steps,rough_step,fine_step
     #set initial position
@@ -138,33 +124,14 @@ def autofocus(pos,steps,rough_step,fine_step):
                 else:
                     streak += 1
 
-    ##finished##
-##    print "sharpest image --> ", best
-
     end = time.clock()
     
-##    print "Run time = ",end-start
     
     if found == False:
-##        print "current pos is best"
         setZ(best[0][2])
     time.sleep(.1)
     return best
 
-
-def main2():
-    mmc.setAutoShutter(0)
-    mmc.setShutterOpen(1)
-    start = time.clock()
-    a = get(getXYZ(),True)
-    stop = time.clock()
-    print "Run time = ",stop-start," seconds"
-    print a
-    a[2].show()
-    mmc.setShutterOpen(0)
-    return a
-
-##main2()
 
 
 		

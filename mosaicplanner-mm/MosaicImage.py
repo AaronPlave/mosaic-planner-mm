@@ -25,9 +25,9 @@ import threading
 import os
 import time
 import Queue
+import MetadataHandler
 from CenterRectangle import CenterRectangle
 from matplotlib.lines import Line2D
-import MetadataHandler
 #implicity this relies upon matplotlib.axis matplotlib.AxisImage matplotlib.bar 
 
 
@@ -102,7 +102,7 @@ class ImageCutThread(threading.Thread):
 class MosaicImage():
     """A class for storing the a large mosaic image in a matplotlib axis. Also contains functions for finding corresponding points
     in the larger mosaic image, and plotting informative graphs about that process in different axis"""
-    def __init__(self,axis,one_axis,two_axis,corr_axis,imagefile,imagematrix,proj_folder=None,extent=None,flipVert=False):
+    def __init__(self,axis,one_axis,two_axis,corr_axis,imagefile,imagematrix,proj_folder=None,extent=None,px_Um=False,flipVert=False):
         """initialization function which will plot the imagematrix passed in and set the bounds according the bounds specified by extent
         
         keywords)
@@ -128,7 +128,9 @@ class MosaicImage():
         self.imageExtents = {imagefile:MetadataHandler.LoadMetadata(imagefile)[0]}
         self.flipVert=flipVert
         self.imagematrix=imagematrix
-
+        self.PxSizeUm = px_Um
+        print self.PxSizeUm,"PXXXXXXXXXXXX"
+        
         if proj_folder:
             self.proj_folder=proj_folder
         
@@ -149,7 +151,7 @@ class MosaicImage():
         #calculate the width of the image (calling it _um assuming its in units of microns)
         #from now on I will assume the units are in microns, though if they were in some other unit it would just carry through
         width_um=self.extent[1]-self.extent[0]
-        width_um *= .6  #GENERALIZE THIS TO PX_UM   
+        width_um *= self.PxSizeUm  #GENERALIZE THIS TO PX_UM   
         
         
         #calculate the pixels/micron of full resolution picture
@@ -204,14 +206,16 @@ class MosaicImage():
 
         #can I just convert back to pixels here? also are pxUm conversions
         #intoducing error?
-        px1,px2 = [i/.6 for i in mosaic_extent],[i/.6 for i in tile_extent]
+        px_Um = self.PxSizeUm
+        
+        px1,px2 = [i/px_Um for i in mosaic_extent],[i/px_Um for i in tile_extent]
 
         #Padding
-        size_int = (abs(int((maxx/.6-minx/.6)*scaling)),abs(int((maxy/.6-miny/.6)*scaling)))
+        size_int = (abs(int((maxx/px_Um-minx/px_Um)*scaling)),abs(int((maxy/px_Um-miny/px_Um)*scaling)))
         
         im = Image.new('L',size_int)
-        im.paste(mosaic,(int(abs((px1[1]-maxx/.6)*scaling)),int(abs((px1[3]-maxy/.6)*scaling))))
-        im.paste(tile,(int(abs((px2[1]-maxx/.6)*scaling)),int(abs((px2[3]-maxy/.6)*scaling))))
+        im.paste(mosaic,(int(abs((px1[1]-maxx/px_Um)*scaling)),int(abs((px1[3]-maxy/px_Um)*scaling))))
+        im.paste(tile,(int(abs((px2[1]-maxx/px_Um)*scaling)),int(abs((px2[3]-maxy/px_Um)*scaling))))
 
         im.save(os.path.join(self.proj_folder,'mosaic.tif'))
 
@@ -479,8 +483,8 @@ class MosaicImage():
 ##        print x,y,"IS IT RIGHT?"
 ##        x_pix=int(round(x/self.orig_um_per_pix))
 ##        y_pix=int(round(y/self.orig_um_per_pix))
-        x_pix=abs(int(x/.6)) #should just be converting to pixels here. Works but may be slightly off.
-        y_pix=abs(int(y/.6))
+        x_pix=abs(int(x/self.PxSizeUm)) #should just be converting to pixels here. Works but may be slightly off.
+        y_pix=abs(int(y/self.PxSizeUm))
 ##        print "convert_pos_to_orig_ind complete",extent,x_pix,y_pix
         return (x_pix,y_pix)
     
@@ -498,8 +502,12 @@ class MosaicImage():
         returns) cut: a 2d numpy matrix containing the removed patch
         
         """
-        tile = self.findHighResImageFile(x,y)[0]
-##        print x,y,"xy CUTOUT POS"
+        try:
+            tile = self.findHighResImageFile(x,y)[0]
+        except TypeError:
+            print "Failed to find high res tile, make sure the tile exists and/or you have selected two points"
+            return False 
+        print x,y,"xy CUTOUT POS"
 ##        print tile,"TILE"       
         (xpx,ypx)=self.convert_pos_to_orig_ind(x,y,tile)
         image = Image.open(tile)
