@@ -2,7 +2,7 @@ TODO:
 
 --------------Ranked in order of importance, at least for the first few---------------
 
-#Test 63x acquisition and write a script to modify the Micro-Manager output to match axiovision metadata output
+++#Test 63x acquisition and write a script to modify the Micro-Manager output to match axiovision metadata output
 
 
 ++#Allow user to set parameters like focus settings, MM-configuration file to load, button for loading MM config?, project name for creating a project folder to store mosaic, CSV, and subfolder containing image folders, cross corr coefficient used for good match, number of slices (for determining when to stop), search window size for correllation, maybe number of searches and window sizes?
@@ -22,7 +22,7 @@ TODO:
 
 #DOCSTRINGS!!!!!!!
 
-#FIX mosiacPlanner pixel size grab from metadata
+++#FIX mosiacPlanner pixel size grab from metadata
 
 #Add some sort of safety features that know the extent of the stage and won't go past the edges?
 
