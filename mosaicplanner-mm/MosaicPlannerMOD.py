@@ -478,7 +478,6 @@ class MosaicPanel(FigureCanvas):
     def DeleteImg(self,event="none"):
         """handler for handling the Delete Image tool press"""
         img = self.selected_imgs[0]
-        print img
 
         #remove highlight
         self.img_box.set_visible(False)
@@ -486,7 +485,6 @@ class MosaicPanel(FigureCanvas):
 
         #removing image directory
         img_directory = os.path.dirname(img)
-        print img_directory,"DIRECTORY"
         shutil.rmtree(img_directory)
 
         #make a copy of the imagefiles object to avoid aliasing        
@@ -693,7 +691,6 @@ class MosaicPanel(FigureCanvas):
         (dx_um,dy_um)=dxy_um
         
         self.posList.pos2.shiftPosition(dx_um,dy_um) #watch out for this shift.. gets weird depending on how you have your axes/extents (i.e. + or - )
-        #self.draw()
         return corrval
           
     def OnKeyPress(self,event="none"):
@@ -757,11 +754,8 @@ class MosaicPanel(FigureCanvas):
             proj_folder = None
 
         try:
-            print "try"
-            print self.Parent.PxSizeUm
             px_Um = self.Parent.PxSizeUm
         except:
-            print "none"
             px_Um = None
             
         self.mosaicImage=MosaicImage(self.subplot,self.posone_plot,self.postwo_plot,self.corrplot,tif_filename,imagematrix,proj_folder,extent,px_Um,flipVert=flipVert)
@@ -865,7 +859,6 @@ class MosaicPanel(FigureCanvas):
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
-##        self.z_positions[str((x,y))]=z
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -916,8 +909,6 @@ class MosaicPanel(FigureCanvas):
         
         #create new dir for image, save im
         (x,y,z) = MM_AT.getXYZ()
-##        self.z_positions[str((x,y))] = z
-##        print self.z_positions
         str_xyz = str((x,y,z))    
         newdir = os.path.join(new_tiles,str_xyz)
         os.mkdir(newdir)
@@ -969,7 +960,6 @@ class MosaicPanel(FigureCanvas):
 
         #If user specified num_slices, use that, else no stop (default value = 0)
         stop = self.Parent.num_slices
-##        print "STOP = ",stop
 
         #Acquire               
         while go:
@@ -979,8 +969,6 @@ class MosaicPanel(FigureCanvas):
                     print "reached num_slices limit, stopping."
                     break
             go = self.AcquireNext()
-##            dict_tmp = self.z_positions.copy() #Very roundabout way to store ordered dict pos and get last two entries
-##            self.z_diff(dict_temp.popitem[1],dict_temp.popitem[1])
             counter += 1
         print "Total acq time = ",time.clock()-acq_start
         print "Number of rounds completed = ",counter
@@ -996,9 +984,8 @@ class MosaicPanel(FigureCanvas):
             print "newpos false"
             return False
         
-        print "newpos",newpos
         x3,y3,z3 = self.posList.pos2.x,self.posList.pos2.y,MM_AT.getXYZ()[2]
-        print x3,y3,z3,"x3,y3,z3 ##############################################"
+        print x3,y3,z3,"x3,y3,z3"
         
         #image capture, if true then successfully acquired image or found image in mosaic
 
@@ -1130,10 +1117,6 @@ class MosaicPanel(FigureCanvas):
             print "THIS IS POSITION Z",pos[2]
             return pos[2]
         
-##          except:
-##              print "Unable to grab and process next image"
-##              return False
-##    
     def cross_corr(self,window=100):
         """
         Cross corr for MM
@@ -1519,12 +1502,12 @@ class ZVISelectFrame(wx.Frame):
                 tiles.append(i)
         xpos = f[tiles[0]]["XPositionUm"]
         ypos = f[tiles[0]]["YPositionUm"]
-        ScaleFactorX= self.PxSizeUm #PixelSize_um??
-        ScaleFactorY= self.PxSizeUm #?
+        ScaleFactorX= self.PxSizeUm
+        ScaleFactorY= self.PxSizeUm 
         Width=f["Summary"]["Width"]
         Height=f["Summary"]["Height"]
         extent=[xpos-(Width/2)*ScaleFactorX,xpos+(Width/2)*ScaleFactorX,\
-        ypos+(Height/2)*ScaleFactorY,ypos-(Height/2)*ScaleFactorY] #FOR NOW
+        ypos+(Height/2)*ScaleFactorY,ypos-(Height/2)*ScaleFactorY]
         return extent
         
     def LoadZVIMetaData(self,filename):
@@ -1585,15 +1568,13 @@ class ZVISelectFrame(wx.Frame):
             small_width=int(big_width*rescale)   
             small_height=int(big_height*rescale)       
             image=image.resize((small_width,small_height))
-##            image.show()
             return (image,small_height,small_width)        
         elif scale == False:
             print "NOT scaling, ",filename
-##            image.show()
             image_copy = image.copy()
             return (image_copy,big_height,big_width)    
         else:
-            print "can't get here..?"
+            print "can't get here"
 
             
     def OnMetaLoad(self,evt):
@@ -1623,7 +1604,6 @@ class ZVISelectFrame(wx.Frame):
         """event handler for handling the Load button press for loading MM config file"""
         filename=str(self.conf_filepicker.GetPath())
         print filename
-        print filename
         try:
             print "Loading MM config file"
             MM_AT.loadsysconf(filename)
@@ -1649,12 +1629,13 @@ class ZVISelectFrame(wx.Frame):
             print "creating project folder"
             os.mkdir(os.path.join(self.proj_folder,'new_tiles'))
         else:
-            print "folder already exists, project directory set here. Previous projects in this directory \n\
-                    will not affect your current project. However, if you try to load this project, it will\n\
-                    load ALL files in the new_tiles directory including files from previous projects."
+            print "\nfolder already exists, project directory set here. Previous projects in this directory \
+                    \nwill not affect your current project. However, if you try to load this project, it will\
+                    \nload ALL files in the new_tiles directory including files from previous projects."
 
         #Toggle global MM_FLAG on, signals that and MM project is being worked on
         self.MM_FLAG = True
+
         
     def OnProjLoad(self,event="none"):
         """
@@ -1663,6 +1644,9 @@ class ZVISelectFrame(wx.Frame):
         """
         main_path = self.proj_folderpicker.GetPath()
         tile_path = os.path.join(main_path,'new_tiles')
+        settings_path = os.path.join(main_path,'MosaicPlanner_Settings.txt')
+
+        #try to grab a first image. Only need one to verify.
         try:
             first_img = os.path.join(tile_path,os.listdir(tile_path)[0])
         except:
@@ -1685,7 +1669,7 @@ class ZVISelectFrame(wx.Frame):
             print "Couldn't find an image in the new_tiles directory"
             return
 
-        
+      
         #grab images from new_tiles subdirectories
         self.MM_FLAG = True
         new_tiles_sub = os.listdir(tile_path)
@@ -1703,7 +1687,30 @@ class ZVISelectFrame(wx.Frame):
         #set project folder    
         self.proj_folder = self.proj_folderpicker.GetPath()            
         print "All necessary files found, loading project..."
-    
+
+        #load settings if they exist
+        print os.path.exists(settings_path)
+        print settings_path
+        if os.path.exists(settings_path):
+            print "Loading previous settings"
+            self.Load_MM_Settings()
+
+            settings = {}
+            settings['scaling'] = self.scaling 
+            settings['num_slices']= self.num_slices 
+            settings['corr_coefficient']= self.corr_coefficient
+            settings['num_searches'] = self.num_searches
+            settings['focus_params']= self.focus_params 
+            settings['exposure']= self.exposure 
+            settings['win1']= self.win1 
+            settings['win2']= self.win2 
+            settings['win3']= self.win3 
+
+            self.MMSettings.update_settings(settings)
+            
+        else:
+            print "No settings file found"
+            
         #build project
         self.mosaicCanvas.build_from_images(img_lst)
         
@@ -1790,7 +1797,43 @@ class ZVISelectFrame(wx.Frame):
         self.win3 = self.MMSettings.win3
         
         dlg.Destroy()
+
+        self.Save_MM_Settings()
+        
         return
+
+    def Load_MM_Settings(self):
+        f_in = file(os.path.join(self.proj_folderpicker.GetPath(),"MosaicPlanner_Settings.txt"),'r')
+        info = json.loads(f_in.read())
+        print info
+
+        #set settings to values contained in the settings file
+        self.scaling = info['scaling']
+        self.num_slices = info['num_slices']
+        self.corr_coefficient = info['corr_coefficient']
+        self.focus_params = info['focus_params']
+        self.exposure = info['exposure']
+        self.num_searches = info['num_searches']
+        self.win1 = info['win1']
+        self.win2 = info['win2']
+        self.win3 = info['win3']
+
+    def Save_MM_Settings(self):
+        f_out = file(os.path.join(self.proj_folderpicker.GetPath(),"MosaicPlanner_Settings.txt"),'w')
+        template = {
+            "scaling":self.scaling,
+            "num_slices":self.num_slices,
+            "corr_coefficient":self.corr_coefficient,
+            "focus_params":self.focus_params,
+            "exposure":self.exposure,
+            "num_searches":self.num_searches,
+            "win1":self.win1,
+            "win2":self.win2,
+            "win3":self.win3}
+        
+        text = json.dumps(template)
+        f_out.write(text)
+        f_out.close()
     
 #dirname=sys.argv[1]
 #print dirname

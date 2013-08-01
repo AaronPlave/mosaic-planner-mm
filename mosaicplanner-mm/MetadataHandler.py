@@ -108,6 +108,7 @@ def LoadZVIMetaData(filename):
     return extent
 
 def LoadMetadata(filename):
+    """Call this function to automatically choose which loader to use"""
 ##    print filename
     globbed=glob.glob(os.path.join(os.path.dirname(filename),'*.zvi'))
     if globbed:

@@ -129,7 +129,6 @@ class MosaicImage():
         self.flipVert=flipVert
         self.imagematrix=imagematrix
         self.PxSizeUm = px_Um
-        print self.PxSizeUm,"PXXXXXXXXXXXX"
         
         if proj_folder:
             self.proj_folder=proj_folder
@@ -151,7 +150,7 @@ class MosaicImage():
         #calculate the width of the image (calling it _um assuming its in units of microns)
         #from now on I will assume the units are in microns, though if they were in some other unit it would just carry through
         width_um=self.extent[1]-self.extent[0]
-        width_um *= self.PxSizeUm  #GENERALIZE THIS TO PX_UM   
+        width_um *= self.PxSizeUm 
         
         
         #calculate the pixels/micron of full resolution picture
@@ -161,8 +160,7 @@ class MosaicImage():
         (matrix_height,matrix_width)=imagematrix.shape
         self.matrix_scale=matrix_width/width_um
 
-        print "px/Um downsample",self.matrix_scale
-        
+        print "px/Um downsample",self.matrix_scale        
         
         
         #plot the image using paintImage
@@ -224,9 +222,7 @@ class MosaicImage():
     def extendMosaicTiff(self, mosaic, image_file_name, low_res_image_array, old_extent,scaling):
         #add new image to image files
         self.imagefiles.append(image_file_name)
-        
-##        print self.imagefiles,"IMAGEFILES"
-        
+                
         #grab image metadata
         tile_extent = MetadataHandler.LoadMetadata(image_file_name)[0]        
 
@@ -235,25 +231,14 @@ class MosaicImage():
         
         #pad low res
         self.imagematrix,self.extent=self.pad(mosaic,low_res_image_array,old_extent,tile_extent,scaling)
-
-##        print "img matrix"
-##        self.imagematrix.show()
         
         self.imagematrix = np.reshape(self.imagematrix.getdata(),(self.imagematrix.size[1],self.imagematrix.size[0]))
-
-##        try:
-##            im = Image.fromarray(self.imagematrix,'L')
-##            im.show()
-##        except:
-##            print "can't show this matrix like this."
-
 
         return self.extent
         
 
     def findTileExtent(self,tile):
         if len(self.imagefiles) == 1:
-##            print "len imagefiles = 1"
             return self.extent
         else:
             return self.imageExtents[tile]        
@@ -373,8 +358,6 @@ class MosaicImage():
             theaxis.set_ylim(yc-dh,yc+dh)
         else:
             theaxis.set_ylim(yc-dh,yc+dh) #changed this to have cutouts work 
-##        print (xc-dw,xc+dw) ,"x vals"
-##        print (yc-dh,yc+dh),"y vals"
          
     def paintImageOne(self,cut,xy=(0,0),dxy_pix=(0,0),window=0):
         """paints an image in the self.one_axis axis, plotting a box of size 2*window+1 around that point
@@ -390,9 +373,6 @@ class MosaicImage():
         dx=dx*self.orig_um_per_pix;
         dy=dy*self.orig_um_per_pix;
         #the size of the cutout box in microns
-##        print xc,yc,"xc yc, or the middle stage coord of the cutout"
-##        print dx,dy
-##        print self.orig_um_per_pix,"um"
         boxsize_um=(2*window+1)*self.orig_um_per_pix;
         
         #if there is no image yet, create one and a box
@@ -420,7 +400,6 @@ class MosaicImage():
         """paints an image in the self.two_axis, with 0,0 at the center cut=the 2d numpy"""
         #create or update appropriately
         (xc,yc)=xy
-##        print xy,"xy2"
         if self.twoImage==None:
             self.twoImage=self.paintImageCenter(cut, self.two_axis,xc=xc,yc=yc,scale=self.orig_um_per_pix)
             self.two_axis_center=Line2D([xc],[yc],marker='+',markersize=7,markeredgewidth=1.5,markeredgecolor='r')
@@ -472,20 +451,11 @@ class MosaicImage():
         returns) (x_pix,y_pix) the indices in pixels of that location
         
         """
-##        print "convert_pos info TILE,EXTENT",tile,self.extent
         extent = self.findTileExtent(tile) if tile else self.extent
         x=x-extent[1] #CHANGED THIS TO FLIP X IN CUTOUTS
-        #if self.flipVert:
-        #    y=self.extent[2]-y
-        #else:
-##        print y,extent,"SASFSD"
         y=abs(extent[3]-extent[2])-abs(extent[2]-y)
-##        print x,y,"IS IT RIGHT?"
-##        x_pix=int(round(x/self.orig_um_per_pix))
-##        y_pix=int(round(y/self.orig_um_per_pix))
         x_pix=abs(int(x/self.PxSizeUm)) #should just be converting to pixels here. Works but may be slightly off.
         y_pix=abs(int(y/self.PxSizeUm))
-##        print "convert_pos_to_orig_ind complete",extent,x_pix,y_pix
         return (x_pix,y_pix)
     
     
@@ -508,22 +478,14 @@ class MosaicImage():
             print "Failed to find high res tile, make sure the tile exists and/or you have selected two points"
             return False 
         print x,y,"xy CUTOUT POS"
-##        print tile,"TILE"       
         (xpx,ypx)=self.convert_pos_to_orig_ind(x,y,tile)
         image = Image.open(tile)
-##        print xpx,ypx,"XPX,YPX"
         image=image.crop([xpx-window,ypx-window,xpx+window,ypx+window])
-        #image=image.convert('L')
-##        image.show()
-        #enh = ImageEnhance.Contrast(image)
-        #image=enh.enhance(1.5)   
         (width,height)=image.size
-##        print width,height
         
 
         #WHAT MODE SHOULD THIS BE?
         cut=np.reshape(np.array(image.getdata(),np.dtype('uint16')),(height,width))
-##        cut=np.reshape(np.array(image.getdata(),np.dtype('L')),(height,width))
         return cut
 
 
@@ -544,22 +506,11 @@ class MosaicImage():
         corrmat) the matrix of correlation values measured with 0,0 being a shift of -delta,-delta
         
         """
-##        from matplotlib import pyplot as plt
 
         (x1,y1)=xy1
         (x2,y2)=xy2
         one_cut=self.cutout_window(x1,y1,window+delta)
         two_cut=self.cutout_window(x2,y2,window)
-        #return (target_cut,source_cut,mycorrelate2d(target_cut,source_cut,mode='valid'))
-    
-##        print xy1,xy2
-##        print type(one_cut)
-##        plt.imshow(one_cut, interpolation='nearest')
-##        plt.show()
-        
-##        plt.imshow(two_cut, interpolation='nearest')
-
-##        plt.show()
         return (one_cut,two_cut,mycorrelate2d(one_cut,two_cut,skip))
        
     def align_by_correlation(self,xy1,xy2,window=100,delta=75,skip=3):
@@ -584,20 +535,14 @@ class MosaicImage():
         maxind=corrmat.argmax()
         #determine the indices of that peak
         (max_i,max_j)=np.unravel_index(maxind,corrmat.shape)
-
-##        print max_i,max_j,"mI,mJ"
-        
         
         #calculate the shift for that index in pixels
         dy_pix=max_i*skip-delta
         dx_pix=max_j*skip-delta
 
-        
-
         #convert those indices into microns
         dy_um=dy_pix*self.orig_um_per_pix
         dx_um=dx_pix*self.orig_um_per_pix
-
 
         #pack up the shifts into tuples
         dxy_pix=(dx_pix,dy_pix)
@@ -620,7 +565,6 @@ class MosaicImage():
         (x2,y2)=xy2
         one_cut=self.cutout_window(x1,y1,window)
         two_cut=self.cutout_window(x2,y2,window)
-##        print "HIII",x1,y1,window
         self.paintImageOne(one_cut,xy1)
         #paint the patch around the second point in its axis
         self.paintImageTwo(two_cut,xy2)

@@ -37,10 +37,11 @@ class MMSettings():
 
         #Bool to enable or disable box search, should be off by default, use for very curvy ribbon
         self.boxes = boxes
+        
         self.corr_coefficient = corr_coefficient
 
         #not yet implemented
-##        self.num_searches = num_searches
+        self.num_searches = num_searches
 
         #list/dict mapping each search (one through three for now) to individual parameters like window size
         self.search_params = search_params
@@ -50,10 +51,21 @@ class MMSettings():
 
         self.exposure = exposure
 
-        self.num_searches = num_searches
         self.win1 = win1
         self.win2 = win2
         self.win3 = win3
+        
+    def update_settings(self,settings):
+        """updates object with new settings from file, given in MosaicPlanner"""
+        self.scaling = settings['scaling']
+        self.num_slices = settings['num_slices']
+        self.corr_coefficient = settings['corr_coefficient']
+        self.num_searches = settings['num_searches']
+        self.focus_params = settings['focus_params']
+        self.exposure = settings['exposure']
+        self.win1 = settings['win1']
+        self.win2 = settings['win2']
+        self.win3 = settings['win3']
         
 class MosaicSettings:
     def __init__(self,mag=65.486,mx=1,my=1,overlap=10,show_box=False,show_frames=False):
