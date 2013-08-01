@@ -56,7 +56,6 @@ Run the main program with MosaicPlannerMOD.py. Once you've successfully gotten t
 #Known issues + Future Developments:
 
 -Needs more testing of main functions. Most work well, but occasionally there are weird results.
--More to come since many more exist.
 -cross correlation doesn't always work the first time you do a cross correllation in the very beginning. Also, the program does 2 cross-corrs by default since I've found that doing it twice leads to better results.
 -Bug where the canvas doesn't refresh the position and cutout of the last point you do automatically until you select the point/any piont
 -Sometimes fails when acquiring images in a manner outside of normal use cases.
